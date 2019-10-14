@@ -1,0 +1,35 @@
+.axis line{
+    stroke:rgb(100, 100, 100);
+  }
+  
+.axis path{
+    stroke:rgb(100, 100, 100);
+  }
+
+.axis text{
+    fill:rgb(44, 3, 3);
+    font-size: 16;
+}
+
+.bar-chart {
+  background-color: #C7D9D9;
+padding-left: 2.7cm;
+padding-right: 2.7cm;
+padding-bottom:3cm;
+  }
+  
+.bar {
+   fill: #115D8C;
+  padding-left: 2.7cm;
+   }
+ 
+h2.headertekst {
+text-align: center;
+width:80%
+}
+
+.bar text
+{
+  fill: #045a5a;
+  font-size: 24px;
+}
