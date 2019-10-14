@@ -16,7 +16,7 @@ class App extends Component {
  ChartVisibility ()
  {
   let bBarChart = true;
-  let bScatterChart = false;
+  let bScatterChart = true;
 
   if (!bBarChart)
   {
