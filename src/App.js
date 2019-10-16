@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import './App.css';
 import BarChart from './BarChart';
 import ScatterChart from './Pages/ScatterChart';
+import LineChart from './Stocks/LineChart';
 import {csv} from 'd3';
 
 
@@ -10,13 +11,14 @@ class App extends Component {
  constructor()
  {
    super();
-   this.state = { data : [["",10], ["",20], ["",30]], dataSold : []}
+   this.state = { data : [["",10], ["",20], ["",30]], dataSold : [], stockdata: []}
  }
 
  ChartVisibility ()
  {
   let bBarChart = true;
   let bScatterChart = true;
+  let bLineChart=true;
 
   if (!bBarChart)
   {
@@ -26,6 +28,11 @@ class App extends Component {
   if (!bScatterChart)
   {
      document.getElementById("divScatterChart").style.display = "none";
+  }
+
+  if (!bLineChart)
+  {
+     document.getElementById("divLineChart").style.display = "none";
   }
 
  }
@@ -55,6 +62,7 @@ class App extends Component {
   async componentDidMount() {
 
   this.ChartVisibility();
+  
 
   const data2  = await csv('./redfin_2019-09-30-Bellevue-sold.csv');
   let  dataSold = [];
@@ -77,6 +85,33 @@ class App extends Component {
     });
     this.setState({ dataSold: dataSold })
 
+    //data3
+  const data3  = await csv('./AAP.csv');
+  let  stockdata = [];
+
+  data3.forEach(d => 
+    {
+      var singleData = 
+      {
+         Date:'0000',
+         Id:'1',
+         Price:'0',
+         Volume:'0'
+      };
+      singleData.Date = d["Date"];
+      singleData.Id=+d["Id"];
+      singleData.Price = +d["Adjusted_close"];
+      singleData.Volume = +d["Volume"];
+
+      if (singleData.Id>0 && singleData.Price>0)
+        stockdata.push(singleData);
+        
+      console.log("Id=",singleData.Id," Price=",singleData.Price," Date=",singleData.Date);     
+      
+
+    });
+    this.setState({ stockdata: stockdata })
+
   }
   render()
   {
@@ -93,12 +128,21 @@ class App extends Component {
         </div>
      </div>
 
-     <div id="divScatterChart">
+      <div id="divScatterChart">
       <div className='App-header'>
         <h4>Houses with 2-3 bathrooms sell fastest!</h4>
       </div>
         <div className='Chart'>
           {<ScatterChart data= {this.state.dataSold} size={[500,500]}/>}
+        </div>
+      </div>
+
+      <div id="divLineChart">
+      <div className='App-header'>
+        <h4>Stock Price of AAP</h4>
+      </div>
+        <div className='Chart'>
+          {<LineChart data= {this.state.stockdata} size={[500,500]}/>}
         </div>
       </div>
 
