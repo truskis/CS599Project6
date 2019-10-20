@@ -4,7 +4,7 @@ import './../Chart.css';
 import * as d3 from "d3";
 
 
-class LineChart extends Component {
+class AccountChart extends Component {
    constructor(props){
       super(props)
       this.createBarChart = this.createBarChart.bind(this)
@@ -38,7 +38,7 @@ class LineChart extends Component {
 
            // Add X axis
          var x = d3.scaleLinear()
-            .domain([0, d3.max(data.map (d => { return d.length;})) +10])
+            .domain([0, d3.max(data.map (d => { return d.length*3;})) +5])
             .range([ 0, width ]);
             svg.append("g")
             .attr("class", "axis")
@@ -51,7 +51,7 @@ class LineChart extends Component {
             
          // Add Y axis
          var y = d3.scaleLinear()
-            .domain([0, d3.max(data.map (d => { return d.Price;})) + 1])
+            .domain([0, d3.max(data.map (d => { return d.account;})) + 100000])
             .range([ height, 0]);
             svg.append("g")
             .attr("class", "axis")
@@ -74,25 +74,33 @@ class LineChart extends Component {
          // Y axis label:
          svg.append("text")
          .attr("class", "axis")
-         .attr("text-anchor", "end")
+         .attr("text-anchor", "rotate(-90)")
          .attr("y", height/2 + 10 )
-         .attr("x", -30)
+         .attr("x", -80)
          .style("font-size", 16)
          .style("fill", "#045a5a")
-         .text("Price");
+         .text("Account");
 
          if (data.length >0 )
          {
+          var line = d3.line()
+            .x(function(d, i) { return i*3; }) // set the x values for the line generator
+            .y(function(d) { return d.account; }) // set the y values for the line generator 
+            .curve(d3.curveMonotoneX) // apply smoothing to the line
+
+         svg.append("path")
+            .datum(data) // 10. Binds data to the line 
+            .attr("class", "line") // Assign a class for styling 
+            .attr("d", line); // 11. Calls the line generator 
+
          // Add dots
          svg.append('g')
             .selectAll("dot")
             .data(data)
             .enter()
             .append("circle")
-               .attr("cx", function (d, i) { return i; } )
-               .attr("cy", function (d) { return y(d.Price); } )
-               //.attr("x2", function (d) { return x(d.Id+1); } )
-               //.attr("y2", function (d) { return y(d.Price); } )
+               .attr("cx", function (d, i) { return i*3; } )
+               .attr("cy", function (d) { return y(d.account); } )
                .attr("r", 0.5)
                .style("stroke", "69b3a2")
                .style("fill-opacity", "0.3" )
@@ -104,8 +112,8 @@ class LineChart extends Component {
    }
 render() {
       return <svg ref={node => this.node = node}
-      width={500} height={500}>
+      width={1000} height={500}>
       </svg>
    }
 }
-export default LineChart
+export default AccountChart

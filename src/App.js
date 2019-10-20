@@ -3,6 +3,7 @@ import './App.css';
 import BarChart from './BarChart';
 import ScatterChart from './Pages/ScatterChart';
 import LineChart from './Stocks/LineChart';
+import AccountChart from './Stocks/AccountChart';
 import {csv} from 'd3';
 
 
@@ -34,6 +35,13 @@ class App extends Component {
   {
      document.getElementById("divLineChart").style.display = "none";
   }
+
+  if (!bLineChart)
+  {
+     document.getElementById("divAccountChart").style.display = "none";
+  }
+
+  
 
  }
  GetDecade (year)
@@ -88,25 +96,137 @@ class App extends Component {
     //data3
   const data3  = await csv('./AAP.csv');
   let  stockdata = [];
+  var  ma=[];
+  let  _account=100000;
+  let  _cash=100000;
+  let  _share=0;
 
+  console.log(data3.length);
   data3.forEach(d => 
     {
       var singleData = 
       {
-         Date:'0000',
-         Id:'1',
+         Date:'',
          Price:'0',
-         Volume:'0'
+         Volume:'0',
+         MA5:'0',
+         MA10:'0',
+         MA20:'0',
+         MA30:'0',        
+         MA5BuyFlag:false,
+         MA5SellFlag:false,
+         account:_account,
+         cash:_cash,
+         share:_share
       };
+       
       singleData.Date = d["Date"];
-      singleData.Id=+d["Id"];
       singleData.Price = +d["Adjusted_close"];
-      singleData.Volume = +d["Volume"];
+      singleData.Volume = +d["Volume"];      
+      ma.push(singleData.Price);
 
-      if (singleData.Id>0 && singleData.Price>0)
+      singleData.MA5=ma.reduce(function(sum, d, i) {        
+        if(ma.length<5) return 0.0;  
+        var j=ma.length-5;
+        if(i>=j)     
+        { 
+          return sum+d;   
+        }     
+        return 0;
+      }, 0);
+      singleData.MA5=singleData.MA5/5.0;
+
+      singleData.MA10=ma.reduce(function(sum, d, i) {        
+        if(ma.length<10) return 0.0;  
+        var j=ma.length-10;
+        if(i>=j)     
+        { 
+          return sum+d;   
+        }     
+        return 0;
+      }, 0);
+      singleData.MA10=singleData.MA10/10.0;
+
+      singleData.MA20=ma.reduce(function(sum, d, i) {        
+        if(ma.length<20) return 0.0;  
+        var j=ma.length-20;
+        if(i>=j)     
+        { 
+          return sum+d;   
+        }     
+        return 0;
+      }, 0);
+      singleData.MA20=singleData.MA20/20.0;
+
+      singleData.MA30=ma.reduce(function(sum, d, i) {        
+        if(ma.length<30) return 0.0;  
+        var j=ma.length-30;
+        if(i>=j)     
+        { 
+          return sum+d;   
+        }     
+        return 0;
+      }, 0);
+      singleData.MA30=singleData.MA30/30.0;
+
+      
+      singleData.MA5BuyFlag=ma.reduce(function(flag,d,i) {
+        if(i>=30 && ma[i]<ma[i-1] && ma[i-1]<ma[i-2]
+          && singleData.MA10>singleData.MA5 
+          )
+          flag=true;
+        else
+          flag=false;
+        return flag;
+      },false);
+
+      singleData.MA5SellFlag=ma.reduce(function(flag,d,i) {
+        if(i>=30 && ma[i]>ma[i-1] && ma[i-1]>ma[i-2]
+          && singleData.MA10<singleData.MA5 
+          )
+          flag=true;
+        else
+          flag=false;
+        return flag;
+      },false);
+
+      if(singleData.MA5BuyFlag && singleData.cash>singleData.Price)
+      {
+        var share=Math.floor(singleData.cash/singleData.Price);
+        singleData.cash=singleData.cash-share*singleData.Price;
+        singleData.share=singleData.share+share;
+        _share=singleData.share;         
+        _cash=singleData.cash;
+        console.log("buy stocks Date: ",singleData.Date," Cash=",_cash," Share=",_share);           
+      }
+
+      if(singleData.MA5SellFlag && singleData.share>0)
+      {        
+        singleData.cash=singleData.cash+singleData.share*singleData.Price;
+        _cash=singleData.cash;
+        singleData.share=0;
+        _share=singleData.share;
+        console.log("sell stocks Date: ",singleData.Date," Cash=",_cash," Share=",_share);
+      }
+      singleData.cash=_cash;
+      singleData.share=_share;
+      singleData.account=singleData.cash+singleData.share*singleData.Price;
+
+      if (singleData.Price>0)
+      {
         stockdata.push(singleData);
-        
-      console.log("Id=",singleData.Id," Price=",singleData.Price," Date=",singleData.Date);     
+        singleData.account=singleData.cash+singleData.share*singleData.Price;
+        console.log("Date=",singleData.Date,
+                    " Account=",singleData.account,
+                    " Cash=",singleData.cash,
+                    " Share=",singleData.share,
+                    " Price=",singleData.Price,
+                    //" ma=",JSON.stringify(ma),
+                    //" MA5=",singleData.MA5," MA10=",singleData.MA10,
+                    //" MA20=",singleData.MA20," MA30=",singleData.MA30,
+                    " Buy=",singleData.MA5BuyFlag,
+                    " Sell=",singleData.MA5SellFlag);     
+      }
       
 
     });
@@ -143,6 +263,15 @@ class App extends Component {
       </div>
         <div className='Chart'>
           {<LineChart data= {this.state.stockdata} size={[500,500]}/>}
+        </div>
+      </div>
+
+      <div id="divAccountChart">
+      <div className='App-header'>
+        <h4>Stock Account of AAP</h4>
+      </div>
+        <div className='Chart'>
+          {<AccountChart data= {this.state.stockdata} size={[1000,500]}/>}
         </div>
       </div>
 
