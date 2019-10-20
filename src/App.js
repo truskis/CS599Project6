@@ -100,8 +100,9 @@ class App extends Component {
   let  _account=100000;
   let  _cash=100000;
   let  _share=0;
+  var  accountArray=[];
+  var  histArray=[];
 
-  console.log(data3.length);
   data3.forEach(d => 
     {
       var singleData = 
@@ -117,7 +118,8 @@ class App extends Component {
          MA5SellFlag:false,
          account:_account,
          cash:_cash,
-         share:_share
+         share:_share,
+         hist:'0',
       };
        
       singleData.Date = d["Date"];
@@ -211,6 +213,23 @@ class App extends Component {
       singleData.cash=_cash;
       singleData.share=_share;
       singleData.account=singleData.cash+singleData.share*singleData.Price;
+      accountArray.push(singleData.account);
+
+      singleData.hist= accountArray.reduce(function(diff, d, i) {        
+        if(accountArray.length<2) return 0.0;  
+        var j=accountArray.length-1;
+        if(i==j-1)     
+        { 
+          diff=-d;   
+        }     
+        else if(i==j)
+        {
+          diff=d/diff-1;
+        }
+        return Math.round(diff*100);
+      }, 0);
+
+      histArray.push(singleData.hist);
 
       if (singleData.Price>0)
       {
