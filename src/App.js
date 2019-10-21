@@ -1,5 +1,4 @@
 import React, {Component} from 'react';
-import { Container, Row, Col } from 'react-grid-system';
 import './App.css';
 import BarChartHistagram from './BarChartHistagram';
 import TimeLineChart from './Stocks/TimeLineChart';
@@ -19,9 +18,9 @@ class App extends Component {
    this.percentangeGain =  this.endingMoney / this.startingMoney;
    this.averagePercentagegain = 0.15;
    this.standardDeviation = 9.00;
-   this.percetangeGainOfSPY = 0.14;
+   this.percetangeGainOfSPY = -0.14;
    this.MaxDrawdownPercentage = 0.1;
-   this.sharpeRadio = 0.3;
+   this.sharpeRadio = -0.3;
  }
 
  ChartVisibility ()
@@ -279,18 +278,8 @@ class App extends Component {
             {<TimeLineChart data= {this.state.stockdata} size={[800,500]} yAxis={"account"}/>}
       </div>
       <div>
-        <div className="App-singleNumber">
-          <Container className='App-numberContainer'>
-            <Row className='App-numberHeader'>
-              <Col> Starting Money</Col>
-              <Col> Ending Money</Col>
-            </Row>
-            <Row>
-              <Col>  {this.startingMoney}</Col>
-              <Col> {this.endingMoney}</Col>
-            </Row>
-          </Container>
-        </div>
+      <SingleNumber header='Starting Money' value={this.startingMoney}/>
+      <SingleNumber header='Ending Money' value={this.endingMoney}/>
       <SingleNumber header='Percentage gain' value={this.percentangeGain}/>
       <SingleNumber header='Avg yearly percetange gain' value={this.averagePercentagegain}/>
       <SingleNumber header='Standard deviation' value={this.standardDeviation}/>
