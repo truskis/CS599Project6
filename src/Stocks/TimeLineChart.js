@@ -4,24 +4,26 @@ import './../Chart.css';
 import * as d3 from "d3";
 
 
-class LineChart extends Component {
+class TimeLineChart extends Component {
    constructor(props){
       super(props)
-      this.createBarChart = this.createBarChart.bind(this)
+      this.createChart = this.createChart.bind(this)
    }
    componentDidMount() {
-      this.createBarChart()
+      this.createChart()
    }
    componentDidUpdate() {
-      this.createBarChart()
+      this.createChart()
    }
-   createBarChart() 
+   createChart() 
    {
       //console.log(this.props.data.length);
        if(this.props.data.length > 0)
        {
          var data = this.props.data;
          const node = this.node;
+         const padding = 0;
+         const yName = this.props.yAxis;
       
          // set the dimensions and margins of the graph
          var margin = {top: 10, right: 40, bottom: 60, left: 80},
@@ -37,9 +39,9 @@ class LineChart extends Component {
                   "translate(" + margin.left + "," + margin.top + ")");
 
            // Add X axis
-         var x = d3.scaleLinear()
-            .domain([0, d3.max(data.map (d => { return d.length;})) +10])
-            .range([ 0, width ]);
+         var x = d3.scaleTime()
+            .domain(d3.extent(data, function(d) { return d.Date; }))
+            .range([padding, width - padding * 2]);
             svg.append("g")
             .attr("class", "axis")
             .attr("transform", "translate(0," + height + ")")
@@ -47,11 +49,14 @@ class LineChart extends Component {
             .selectAll("text")
             .style("font-size", 14)
             .style("fill", "#045a5a");
-            //.call(d3.axisBottom(x).tickSize(-height).ticks(10));
+
+       svg.selectAll(".axis text")  // select all the text elements for the xaxis
+       .attr("transform", function(d) {
+           return "translate(" + this.getBBox().height*-2 + "," + this.getBBox().height + ")rotate(-45)";});
             
          // Add Y axis
          var y = d3.scaleLinear()
-            .domain([0, d3.max(data.map (d => { return d.Price;})) + 1])
+            .domain([0, d3.max(data.map (d => { return d[yName];})) + 1])
             .range([ height, 0]);
             svg.append("g")
             .attr("class", "axis")
@@ -60,43 +65,28 @@ class LineChart extends Component {
             .style("font-size", 14)
             .style("fill", "#045a5a");
 
-            
-         // Add X axis label:
-         svg.append("text")
-         .attr("text-anchor", "end")
-         .attr("class", "axis")
-         .attr("x", width/2 + margin.left)
-         .attr("y", height + margin.top + 40)
-         .style("font-size", 16)
-         .style("fill", "#045a5a")
-         .text("Date");
-
          // Y axis label:
          svg.append("text")
          .attr("class", "axis")
          .attr("text-anchor", "end")
-         .attr("y", height/2 + 10 )
-         .attr("x", -30)
+         .attr("y", 2 )
+         .attr("x", -20)
          .style("font-size", 16)
          .style("fill", "#045a5a")
-         .text("Price");
+         .text(yName);
 
          if (data.length >0 )
          {
-         // Add dots
-         svg.append('g')
-            .selectAll("dot")
-            .data(data)
-            .enter()
-            .append("circle")
-               .attr("cx", function (d, i) { return i; } )
-               .attr("cy", function (d) { return y(d.Price); } )
-               //.attr("x2", function (d) { return x(d.Id+1); } )
-               //.attr("y2", function (d) { return y(d.Price); } )
-               .attr("r", 0.5)
-               .style("stroke", "69b3a2")
-               .style("fill-opacity", "0.3" )
-               .style("stroke", "#69b3a2");
+           
+             svg.append("path")
+             .datum(data)
+             .attr("fill", "none")
+             .attr("stroke", "steelblue")
+             .attr("stroke-width", 1.5)
+             .attr("d", d3.line()
+                .x(function(d) { return x(d.Date) })
+                .y(function(d) { return y(d[yName]) })
+                )
          }
 
                
@@ -104,8 +94,8 @@ class LineChart extends Component {
    }
 render() {
       return <svg ref={node => this.node = node}
-      width={500} height={500}>
+      width={this.props.size[0]} height={this.props.size[1]}>
       </svg>
    }
 }
-export default LineChart
+export default TimeLineChart

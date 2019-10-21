@@ -1,10 +1,10 @@
 import React, {Component} from 'react';
 import './App.css';
-import BarChart from './BarChart';
-import ScatterChart from './Pages/ScatterChart';
-import LineChart from './Stocks/LineChart';
-import AccountChart from './Stocks/AccountChart';
+//import BarChart from './BarChart';
+//import ScatterChart from './Pages/ScatterChart';
+import TimeLineChart from './Stocks/TimeLineChart';
 import {csv} from 'd3';
+import * as d3 from "d3";
 
 
 class App extends Component {
@@ -107,7 +107,6 @@ class App extends Component {
     {
       var singleData = 
       {
-         Date:'',
          Price:'0',
          Volume:'0',
          MA5:'0',
@@ -122,7 +121,7 @@ class App extends Component {
          hist:'0',
       };
        
-      singleData.Date = d["Date"];
+      singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
       singleData.Price = +d["Adjusted_close"];
       singleData.Volume = +d["Volume"];      
       ma.push(singleData.Price);
@@ -218,11 +217,11 @@ class App extends Component {
       singleData.hist= accountArray.reduce(function(diff, d, i) {        
         if(accountArray.length<2) return 0.0;  
         var j=accountArray.length-1;
-        if(i==j-1)     
+        if(i===j-1)     
         { 
           diff=-d;   
         }     
-        else if(i==j)
+        else if(i===j)
         {
           diff=d/diff-1;
         }
@@ -235,16 +234,16 @@ class App extends Component {
       {
         stockdata.push(singleData);
         singleData.account=singleData.cash+singleData.share*singleData.Price;
-        console.log("Date=",singleData.Date,
-                    " Account=",singleData.account,
-                    " Cash=",singleData.cash,
-                    " Share=",singleData.share,
-                    " Price=",singleData.Price,
-                    //" ma=",JSON.stringify(ma),
-                    //" MA5=",singleData.MA5," MA10=",singleData.MA10,
-                    //" MA20=",singleData.MA20," MA30=",singleData.MA30,
-                    " Buy=",singleData.MA5BuyFlag,
-                    " Sell=",singleData.MA5SellFlag);     
+        // console.log("Date=",singleData.Date,
+        //             " Account=",singleData.account,
+        //             " Cash=",singleData.cash,
+        //             " Share=",singleData.share,
+        //             " Price=",singleData.Price,
+        //             //" ma=",JSON.stringify(ma),
+        //             //" MA5=",singleData.MA5," MA10=",singleData.MA10,
+        //             //" MA20=",singleData.MA20," MA30=",singleData.MA30,
+        //             " Buy=",singleData.MA5BuyFlag,
+        //             " Sell=",singleData.MA5SellFlag);     
       }
       
 
@@ -257,31 +256,12 @@ class App extends Component {
 
   return (
     <div className='App'>
-
-      <div id="divBarChart">
-        <div className='App-header'>
-          <h4>Average house price in Bellevue</h4>
-        </div>
-        <div>
-          {<BarChart data= {this.state.data} size={[850,600]}/>}
-        </div>
-     </div>
-
-      <div id="divScatterChart">
-      <div className='App-header'>
-        <h4>Houses with 2-3 bathrooms sell fastest!</h4>
-      </div>
-        <div className='Chart'>
-          {<ScatterChart data= {this.state.dataSold} size={[500,500]}/>}
-        </div>
-      </div>
-
       <div id="divLineChart">
       <div className='App-header'>
         <h4>Stock Price of AAP</h4>
       </div>
         <div className='Chart'>
-          {<LineChart data= {this.state.stockdata} size={[500,500]}/>}
+          {<TimeLineChart data= {this.state.stockdata} size={[500,500]} yAxis={"Price"}/>}
         </div>
       </div>
 
@@ -290,7 +270,7 @@ class App extends Component {
         <h4>Stock Account of AAP</h4>
       </div>
         <div className='Chart'>
-          {<AccountChart data= {this.state.stockdata} size={[1000,500]}/>}
+          {<TimeLineChart data= {this.state.stockdata} size={[800,500]} yAxis={"account"}/>}
         </div>
       </div>
 
