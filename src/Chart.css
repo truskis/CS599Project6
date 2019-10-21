@@ -6,7 +6,7 @@
     stroke:rgb(100, 100, 100);
   }
 
-.axis text{
+.axis-text{
     fill:rgb(44, 3, 3);
     font-size: 16;
 }

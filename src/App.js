@@ -1,10 +1,11 @@
 import React, {Component} from 'react';
+import { Container, Row, Col } from 'react-grid-system';
 import './App.css';
-//import BarChart from './BarChart';
-//import ScatterChart from './Pages/ScatterChart';
+import BarChartHistagram from './BarChartHistagram';
 import TimeLineChart from './Stocks/TimeLineChart';
 import {csv} from 'd3';
 import * as d3 from "d3";
+import SingleNumber from './SingleNumber'
 
 
 class App extends Component {
@@ -12,7 +13,15 @@ class App extends Component {
  constructor()
  {
    super();
-   this.state = { data : [["",10], ["",20], ["",30]], dataSold : [], stockdata: []}
+   this.state = { data : [["",10], ["",20], ["",30]], dataSold : [], stockdata: [], histArray: []}
+   this.startingMoney = 100000;
+   this.endingMoney = 150000;
+   this.percentangeGain =  this.endingMoney / this.startingMoney;
+   this.averagePercentagegain = 0.15;
+   this.standardDeviation = 9.00;
+   this.percetangeGainOfSPY = 0.14;
+   this.MaxDrawdownPercentage = 0.1;
+   this.sharpeRadio = 0.3;
  }
 
  ChartVisibility ()
@@ -249,31 +258,46 @@ class App extends Component {
 
     });
     this.setState({ stockdata: stockdata })
-
+    this.setState({ histArray: histArray })
   }
   render()
   {
 
   return (
     <div className='App'>
-      <div id="divLineChart">
-      <div className='App-header'>
-        <h4>Stock Price of AAP</h4>
-      </div>
-        <div className='Chart'>
-          {<TimeLineChart data= {this.state.stockdata} size={[500,500]} yAxis={"Price"}/>}
+      <div id="divLineChart"  className='Chart'>
+        <div className='App-header'>
+          <h4>Histagram of daily gains/losses</h4>
         </div>
+            {<BarChartHistagram data= {this.state.histArray} size={[800,500]}/>}
       </div>
 
-      <div id="divAccountChart">
-      <div className='App-header'>
-        <h4>Stock Account of AAP</h4>
-      </div>
-        <div className='Chart'>
-          {<TimeLineChart data= {this.state.stockdata} size={[800,500]} yAxis={"account"}/>}
+      <div className='Chart'>
+        <div className='App-header'>
+          <h4>Stock Account of AAP</h4>
         </div>
+            {<TimeLineChart data= {this.state.stockdata} size={[800,500]} yAxis={"account"}/>}
       </div>
-
+      <div>
+        <div className="App-singleNumber">
+          <Container className='App-numberContainer'>
+            <Row className='App-numberHeader'>
+              <Col> Starting Money</Col>
+              <Col> Ending Money</Col>
+            </Row>
+            <Row>
+              <Col>  {this.startingMoney}</Col>
+              <Col> {this.endingMoney}</Col>
+            </Row>
+          </Container>
+        </div>
+      <SingleNumber header='Percentage gain' value={this.percentangeGain}/>
+      <SingleNumber header='Avg yearly percetange gain' value={this.averagePercentagegain}/>
+      <SingleNumber header='Standard deviation' value={this.standardDeviation}/>
+      <SingleNumber header='Percentage gain of SPY ' value={this.percetangeGainOfSPY}/>
+      <SingleNumber header='Max drawdown percentage' value={this.MaxDrawdownPercentage}/>
+      <SingleNumber header='Sharpe Ratio' value={this.sharpeRadio}/>
+    </div>
     </div>
   );
   }

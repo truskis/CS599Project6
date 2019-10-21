@@ -26,7 +26,7 @@ class TimeLineChart extends Component {
          const yName = this.props.yAxis;
       
          // set the dimensions and margins of the graph
-         var margin = {top: 10, right: 40, bottom: 60, left: 80},
+         var margin = {top: 40, right: 40, bottom: 60, left: 80},
          width =this.props.size[0] - margin.left - margin.right,
          height = this.props.size[1] - margin.top - margin.bottom;
 
@@ -34,7 +34,7 @@ class TimeLineChart extends Component {
                   .append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
-         .append("g")
+            .append("g")
             .attr("transform",
                   "translate(" + margin.left + "," + margin.top + ")");
 
@@ -45,7 +45,7 @@ class TimeLineChart extends Component {
             svg.append("g")
             .attr("class", "axis")
             .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x))
+            .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%m/%y")))
             .selectAll("text")
             .style("font-size", 14)
             .style("fill", "#045a5a");
