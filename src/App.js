@@ -12,72 +12,12 @@ class App extends Component {
  constructor()
  {
    super();
-   this.state = { data : [["",10], ["",20], ["",30]], dataSold : [], stockdata: [], histArray: []}
-   this.startingMoney = 100000;
-   this.endingMoney = 150000;
-   this.percentangeGain =  this.endingMoney / this.startingMoney;
-   this.averagePercentagegain = 0.15;
-   this.standardDeviation = 9.00;
-   this.percetangeGainOfSPY = -0.14;
-   this.MaxDrawdownPercentage = 0.1;
-   this.sharpeRadio = -0.3;
+   this.state = { data : [["",10], ["",20], ["",30]], dataSold : [], stockdata: [], histArray: [], test:0}
  }
 
- ChartVisibility ()
- {
-  let bBarChart = true;
-  let bScatterChart = true;
-  let bLineChart=true;
 
-  if (!bBarChart)
-  {
-     document.getElementById("divBarChart").style.display = "none";
-  }
-  
-  if (!bScatterChart)
-  {
-     document.getElementById("divScatterChart").style.display = "none";
-  }
-
-  if (!bLineChart)
-  {
-     document.getElementById("divLineChart").style.display = "none";
-  }
-
-  if (!bLineChart)
-  {
-     document.getElementById("divAccountChart").style.display = "none";
-  }
-
-  
-
- }
- GetDecade (year)
- {
-     if( year < 1930)
-    return 0; //"1920";
-    if( year < 1940)
-    return 1//"1930s";
-    if( year < 1950)
-    return 2//"1940s";
-    if( year < 1960)
-    return 3//"1950s";
-    if( year < 1970)
-    return 4//"1960s";
-    if( year < 1980)
-    return 5//"1970s";
-    if( year < 1990)
-    return 6//"1980s";
-    if( year < 2000)
-    return 7//"1990s";
-    if( year < 2010)
-    return 8//"2000s";
-
-    return 9//"2010s";
- }
   async componentDidMount() {
 
-  this.ChartVisibility();
   
 
   const data2  = await csv('./redfin_2019-09-30-Bellevue-sold.csv');
@@ -256,8 +196,20 @@ class App extends Component {
       
 
     });
-    this.setState({ stockdata: stockdata })
-    this.setState({ histArray: histArray })
+
+    // Update all the information to be displayed
+    this.setState({
+      stockdata: stockdata,
+      histArray: histArray,
+       startingMoney : 100000,
+       endingMoney : 160000,
+       percentangeGain :   100000 /  160000,
+       averagePercentagegain : 0.15,
+       standardDeviation : 9.00,
+       percetangeGainOfSPY : -0.14,
+       MaxDrawdownPercentage : 0.1,
+       sharpeRadio : -0.3
+     })
   }
   render()
   {
@@ -278,14 +230,14 @@ class App extends Component {
             {<TimeLineChart data= {this.state.stockdata} size={[800,500]} yAxis={"account"}/>}
       </div>
       <div>
-      <SingleNumber header='Starting Money' value={this.startingMoney}/>
-      <SingleNumber header='Ending Money' value={this.endingMoney}/>
-      <SingleNumber header='Percentage gain' value={this.percentangeGain}/>
-      <SingleNumber header='Avg yearly percetange gain' value={this.averagePercentagegain}/>
-      <SingleNumber header='Standard deviation' value={this.standardDeviation}/>
-      <SingleNumber header='Percentage gain of SPY ' value={this.percetangeGainOfSPY}/>
-      <SingleNumber header='Max drawdown percentage' value={this.MaxDrawdownPercentage}/>
-      <SingleNumber header='Sharpe Ratio' value={this.sharpeRadio}/>
+      <SingleNumber header='Starting Money' value={this.state.startingMoney}/>
+      <SingleNumber header='Ending Money' value={this.state.endingMoney}/>
+      <SingleNumber header='Percentage gain' value={this.state.percentangeGain}/>
+      <SingleNumber header='Avg yearly percetange gain' value={this.state.averagePercentagegain}/>
+      <SingleNumber header='Standard deviation' value={this.state.standardDeviation}/>
+      <SingleNumber header='Percentage gain of SPY ' value={this.state.percetangeGainOfSPY}/>
+      <SingleNumber header='Max drawdown percentage' value={this.state.MaxDrawdownPercentage}/>
+      <SingleNumber header='Sharpe Ratio' value={this.state.sharpeRadio}/>
     </div>
     </div>
   );

@@ -10,7 +10,7 @@ class SingleNumber extends Component {
                     <Col> {this.props.header}</Col>
                 </Row>
                 <Row className= {this.props.value < 0 ? 'App-numberValueNeg' :'App-numberValuePos' }>
-                    <Col> {this.props.value}</Col>
+                    <Col id="value"> {this.props.value}</Col>
                 </Row>
                 </Container>
             </div>
