@@ -1,16 +1,5 @@
-This react app contains two charts:
-
-https://css599p5chart1.z22.web.core.windows.net/
-https://css599p5chart2.z22.web.core.windows.net/
-
-One ScatterChart compares house time in the market vs number of baths.
-BarChart.js  (rendering of the chart)
-One BarChart that shows the average price for house in Bellevue, though the months.
-ScatterChart.js (rendering of the chart)
-
-app.js Main landing displays either bar and reads the data from the .cvs file.
-To manage which one is display got to: ChartVisibility() in App.js and set the visibility setting: bBarChart or bScatterChart
-
+Webpage: https://project6.z22.web.core.windows.net/
+Project: https://github.com/truskis/CS599Project6
 
 
 
