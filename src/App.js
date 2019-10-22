@@ -12,7 +12,7 @@ class App extends Component {
  constructor()
  {
    super();
-   this.state = { data : [["",10], ["",20], ["",30]], dataSold : [], stockdata: [], histArray: [], test:0}
+   this.state = { data : [["",10], ["",20], ["",30]], dataSPY : [], stockdata: [], histArray: [], test:0}
  }
 
 
@@ -20,36 +20,42 @@ class App extends Component {
 
   
 
-  const data2  = await csv('./redfin_2019-09-30-Bellevue-sold.csv');
-  let  dataSold = [];
+  const data2  = await csv('./SPY.csv');
+  let  dataSPY = [];
+  var  SPYprice=[];
 
   data2.forEach(d => 
     {
       var singleData = 
       {
-         yearBuilt:'0',
-         baths:'0',
-         daysOnMarket:'0'
+         Price:'0'
+         
       };
-      singleData.yearBuilt = +d["YEAR BUILT"];
-      singleData.baths = +d["BATHS"];
-      singleData.daysOnMarket = +d["DAYS ON MARKET"];
+      singleData.Price = +d["Adjusted_close"];
+      singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
 
-      if (singleData.baths > 0 && singleData.daysOnMarket > 0)
-        dataSold.push(singleData);
+      if (singleData.Price > 0 )
+      {
+        dataSPY.push(singleData);
+        SPYprice.push(singleData.Price);
+        console.log('SPYprice= ',singleData.Price);
+      }
 
     });
-    this.setState({ dataSold: dataSold })
+    this.setState({ dataSPY: dataSPY })
 
     //data3
   const data3  = await csv('./AAP.csv');
   let  stockdata = [];
   var  ma=[];
-  let  _account=100000;
+  let  _accountStart=100000;
   let  _cash=100000;
   let  _share=0;
+  let  _accountEnd=_accountStart;
   var  accountArray=[];
   var  histArray=[];
+  let  prevPrice=0;
+  let  accountSum=0;
 
   data3.forEach(d => 
     {
@@ -63,10 +69,12 @@ class App extends Component {
          MA30:'0',        
          MA5BuyFlag:false,
          MA5SellFlag:false,
-         account:_account,
+         accountStart:_accountStart,
+         account:_accountStart,
          cash:_cash,
          share:_share,
          hist:'0',
+         accountEnd:_accountStart
       };
        
       singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
@@ -161,22 +169,25 @@ class App extends Component {
       singleData.share=_share;
       singleData.account=singleData.cash+singleData.share*singleData.Price;
       accountArray.push(singleData.account);
+      _accountEnd=singleData.account;
+      accountSum+=singleData.account;
 
       singleData.hist= accountArray.reduce(function(diff, d, i) {        
         if(accountArray.length<2) return 0.0;  
         var j=accountArray.length-1;
         if(i===j-1)     
         { 
-          diff=-d;   
+          prevPrice=d;   
         }     
         else if(i===j)
         {
-          diff=d/diff-1;
+          diff=(d-prevPrice)/prevPrice;
         }
         return Math.round(diff*100);
       }, 0);
 
       histArray.push(singleData.hist);
+      console.log('hist=',singleData.hist);
 
       if (singleData.Price>0)
       {
@@ -191,24 +202,101 @@ class App extends Component {
         //             //" MA5=",singleData.MA5," MA10=",singleData.MA10,
         //             //" MA20=",singleData.MA20," MA30=",singleData.MA30,
         //             " Buy=",singleData.MA5BuyFlag,
-        //             " Sell=",singleData.MA5SellFlag);     
+        //             " Sell=",singleData.MA5SellFlag);    
+        //console.log('accountEnd=',singleData.accountEnd); 
       }
       
 
     });
+    console.log('accountArray=',accountArray);
+    console.log('histArray= ',JSON.stringify(histArray));
 
+    function standardDeviation(values){
+      var avg = average(values);
+      
+      var squareDiffs = values.map(function(value){
+        var diff = value - avg;
+        var sqrDiff = diff * diff;
+        return sqrDiff;
+      });
+      
+      var avgSquareDiff = average(squareDiffs);
+    
+      var stdDev = Math.sqrt(avgSquareDiff);
+      return stdDev;
+    }
+    
+    function average(data){
+      var sum = data.reduce(function(sum, value){
+        return sum + value;
+      }, 0);
+    
+      var avg = sum / data.length;
+      return avg;
+    }    
+
+  
+    function drawDown(values)
+    {
+      var accountMaxIndex=0;
+      var accountMax=values.reduce(function(accountMax,d,i)
+      {
+        if(accountMax<d)
+          {
+            accountMaxIndex=i;
+            return d;
+          }
+        else
+        {
+          return accountMax;
+        }
+      },0);
+    
+      var accountMin=values.reduce(function(accountMin,d,i)
+      {
+        if(i>accountMaxIndex )
+          {
+            if(accountMin<d)
+              return d;
+            else
+              return accountMin;
+          }
+        else
+          return 0;
+      },accountMax);
+
+      var maxdrawDown= (accountMax-accountMin)/accountMax*100;
+      
+      return maxdrawDown.toFixed(1);
+
+    }
+
+    function yearlyGain()
+    {
+      return ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1);
+    }
+
+    function sharpeRatio()
+    {
+        var yearlygain=yearlyGain();
+        var yearlySd=standardDeviation(accountArray).toFixed(1);
+        return ((yearlygain-0.035)/yearlySd*100).toFixed(1);
+    }
+     
+   
+    
     // Update all the information to be displayed
     this.setState({
       stockdata: stockdata,
       histArray: histArray,
-       startingMoney : 100000,
-       endingMoney : 160000,
-       percentangeGain :   100000 /  160000,
-       averagePercentagegain : 0.15,
-       standardDeviation : 9.00,
-       percetangeGainOfSPY : -0.14,
-       MaxDrawdownPercentage : 0.1,
-       sharpeRadio : -0.3
+      startingMoney : _accountStart.toFixed(2),
+      endingMoney : _accountEnd.toFixed(2),
+      percentangeGain :   yearlyGain(),
+      averagePercentagegain : ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1),
+      standardDeviation : standardDeviation(accountArray).toFixed(1),
+      percetangeGainOfSPY :((SPYprice[SPYprice.length-1]-SPYprice[0])/SPYprice[0]*100).toFixed(1),
+      MaxDrawdownPercentage :drawDown(accountArray),
+      sharpeRadio :sharpeRatio()
      })
   }
   render()
