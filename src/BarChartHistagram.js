@@ -22,16 +22,6 @@ class BarChartHistagram extends Component {
 
         var histArray = this.props.data;
 
-        // ToDo: Change with actual histagram info
-        histArray = [];
-        for (var i = 0 ; i <360 ; i++)
-        {
-            var num = Math.floor(Math.random() * 40);
-            num = num/100;
-            num = Math.random() > 0.5 ? num : -num;
-            histArray.push(num);
-        }
-
 
         //histArray = histArray.map
         const node = this.node
@@ -57,7 +47,7 @@ class BarChartHistagram extends Component {
         svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .attr("class", "axis")
-        .call(d3.axisBottom(x))
+        .call(d3.axisBottom(x).tickFormat(d3.format(".00%")))
         .selectAll("text")
         .style("font-size", 12)
         .style("fill", "#045a5a");

@@ -183,7 +183,7 @@ class App extends Component {
         {
           diff=(d-prevPrice)/prevPrice;
         }
-        return Math.round(diff*100);
+        return diff;
       }, 0);
 
       histArray.push(singleData.hist);
@@ -320,11 +320,11 @@ class App extends Component {
       <div>
       <SingleNumber header='Starting Money' value={this.state.startingMoney}/>
       <SingleNumber header='Ending Money' value={this.state.endingMoney}/>
-      <SingleNumber header='Percentage gain' value={this.state.percentangeGain}/>
-      <SingleNumber header='Avg yearly percetange gain' value={this.state.averagePercentagegain}/>
+      <SingleNumber header='Percentage gain' value={this.state.percentangeGain +'%'}/>
+      <SingleNumber header='Avg yearly percetange gain' value={this.state.averagePercentagegain +'%'}/>
       <SingleNumber header='Standard deviation' value={this.state.standardDeviation}/>
-      <SingleNumber header='Percentage gain of SPY ' value={this.state.percetangeGainOfSPY}/>
-      <SingleNumber header='Max drawdown percentage' value={this.state.MaxDrawdownPercentage}/>
+      <SingleNumber header='Percentage gain of SPY ' value={this.state.percetangeGainOfSPY +'%'}/>
+      <SingleNumber header='Max drawdown percentage' value={this.state.MaxDrawdownPercentage +'%'}/>
       <SingleNumber header='Sharpe Ratio' value={this.state.sharpeRadio}/>
     </div>
     </div>
