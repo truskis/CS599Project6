@@ -4,8 +4,8 @@ import BarChartHistagram from './BarChartHistagram';
 import TimeLineChart from './Stocks/TimeLineChart';
 import {csv} from 'd3';
 import * as d3 from "d3";
-import SingleNumber from './SingleNumber'
-
+import SingleNumber from './Helpers/SingleNumber'
+import DatePickerStock from './Helpers/DatePickerStock'
 
 class App extends Component {
 
@@ -299,6 +299,9 @@ class App extends Component {
       sharpeRadio :sharpeRatio()
      })
   }
+
+
+
   render()
   {
 
@@ -318,8 +321,9 @@ class App extends Component {
             {<TimeLineChart data= {this.state.stockdata} size={[800,500]} yAxis={"account"}/>}
       </div>
       <div>
-      <SingleNumber header='Starting Money' value={this.state.startingMoney}/>
-      <SingleNumber header='Ending Money' value={this.state.endingMoney}/>
+      <DatePickerStock onDatePickedChanged={this.handleDateChanged} onStartSimulation={this.startSimulation} />
+      <SingleNumber header='Starting Money' value={'$'+ this.state.startingMoney}/>
+      <SingleNumber header='Ending Money' value={'$'+this.state.endingMoney}/>
       <SingleNumber header='Percentage gain' value={this.state.percentangeGain +'%'}/>
       <SingleNumber header='Avg yearly percetange gain' value={this.state.averagePercentagegain +'%'}/>
       <SingleNumber header='Standard deviation' value={this.state.standardDeviation}/>
