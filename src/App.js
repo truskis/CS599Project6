@@ -229,11 +229,11 @@ class App extends Component {
           return diff;
         }, 0);
   
-        histArray.push(singleData.hist);
   
   
         if (this.isdateValid(singleData.Date) && singleData.Price>0)
         {
+          histArray.push(singleData.hist);
           stockdata.push(singleData);
           singleData.account=singleData.cash+singleData.share*singleData.Price;
           // console.log("Date=",singleData.Date,
