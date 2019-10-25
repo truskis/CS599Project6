@@ -78,7 +78,7 @@ this.props.onDatePickedChanged(this.state.startDate,date);
             </Row>
             <Row >
               <Col>
-            <button className='button'>Start Simulation</button>
+            <button className='button' onClick={this.props.onStartSimulation}>Start Simulation</button>
             </Col>
             </Row>
           </Container>

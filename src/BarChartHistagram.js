@@ -7,11 +7,15 @@ class BarChartHistagram extends Component {
     constructor(props){
        super(props)
        this.createBarChart = this.createBarChart.bind(this)
+       var svg = d3.select(this.node);
     }
     componentDidMount() {
        this.createBarChart()
     }
     componentDidUpdate() {
+      var svg = d3.select(this.node)
+         .selectAll("*").remove();
+         
        this.createBarChart()
     }
 
@@ -31,7 +35,7 @@ class BarChartHistagram extends Component {
          width =this.props.size[0] - margin.left - margin.right,
          height = this.props.size[1] - margin.top - margin.bottom;
 
-         var svg = d3.select(node)
+         this.svg = d3.select(node)
          .append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
@@ -44,7 +48,7 @@ class BarChartHistagram extends Component {
         var x = d3.scaleLinear()
         .domain([d3.min(histArray), d3.max(histArray)])  
         .range([0, width - 10]);
-        svg.append("g")
+        this.svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .attr("class", "axis")
         .call(d3.axisBottom(x).tickFormat(d3.format(".00%")))
@@ -65,7 +69,7 @@ class BarChartHistagram extends Component {
         var y = d3.scaleLinear()
         .range([height, 0]);
         y.domain([0, d3.max(bins, function(d) { return d.length; })]);   // d3.hist has to be called before the Y axis obviously
-        svg.append("g")
+        this.svg.append("g")
         .call(d3.axisLeft(y).tickFormat(function(e){
             if(Math.floor(e) !== e)
             {
@@ -79,7 +83,7 @@ class BarChartHistagram extends Component {
         .style("fill", "#045a5a");;
 
         // // append the bar rectangles to the svg element
-        svg.selectAll("rect")
+        this.svg.selectAll("rect")
         .data(bins)
         .enter()
         .append("rect")

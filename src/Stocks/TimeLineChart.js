@@ -13,8 +13,11 @@ class TimeLineChart extends Component {
       this.createChart()
    }
    componentDidUpdate() {
-      this.createChart()
-   }
+      var svg = d3.select(this.node)
+         .selectAll("*").remove();
+         
+       this.createChart()
+    }
    createChart() 
    {
       //console.log(this.props.data.length);
