@@ -99,7 +99,7 @@ class TimeLineChart extends Component {
                 .attr("stroke-width", 1.5)
                 .attr("d", d3.line()
                 .x(function(d) { return x(d.Date) })
-                .y(function(d) { return y(d[yName]+10000) })
+                .y(function(d) { return y(d[yName]) })
                 )
          }
          }

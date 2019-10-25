@@ -96,6 +96,7 @@ class App extends Component {
         }
   
       });
+
       this.setState({ dataSPY: dataSPY })
   
   
