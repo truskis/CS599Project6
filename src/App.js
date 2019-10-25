@@ -12,39 +12,40 @@ class App extends Component {
  constructor()
  {
    super();
-   this.state = { data : [["",10], ["",20], ["",30]], dataSPY : [], stockdata: [], histArray: [], test:0}
+   this.state = { data : [["",10], ["",20], ["",30]], 
+   dataSPY : [], 
+   stockdata: [], 
+   stocksData: [[]], 
+   histArray: [], 
+   test:0, 
+   startDate:d3.timeParse("%m/%d/%Y")("01/01/2009"),
+   endDate:d3.timeParse("%m/%d/%Y")("12/31/2009")}
+
+   this.onDateChanged = this.onDateChanged.bind(this);
  }
 
+
+ onDateChanged(newStartDate, newEndDate)
+ {
+  this.setState({
+    startDate: newStartDate,
+    endDate: newEndDate
+  });
+
+  console.log("new date"+ newStartDate + "stored" + this.state.startDate);
+ }
+  isdateValid(date)
+  {
+    if ((date< this.state.startDate ) ||(date> this.state.endDate ) )
+    return false;
+
+    return true;
+  }
 
   async componentDidMount() {
 
   
-
-  const data2  = await csv('./SPY.csv');
-  let  dataSPY = [];
-  var  SPYprice=[];
-
-  data2.forEach(d => 
-    {
-      var singleData = 
-      {
-         Price:'0'
-         
-      };
-      singleData.Price = +d["Adjusted_close"];
-      singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
-
-      if (singleData.Price > 0 )
-      {
-        dataSPY.push(singleData);
-        SPYprice.push(singleData.Price);
-        console.log('SPYprice= ',singleData.Price);
-      }
-
-    });
-    this.setState({ dataSPY: dataSPY })
-
-    //data3
+        //data3
   const data3  = await csv('./AAP.csv');
   let  stockdata = [];
   var  ma=[];
@@ -56,6 +57,35 @@ class App extends Component {
   var  histArray=[];
   let  prevPrice=0;
   let  accountSum=0;
+
+  const data2  = await csv('./SPY.csv');
+  let  dataSPY = [];
+  var  SPYprice=[];
+
+  let originalSPYPrice = +data2[0]["Adjusted_close"];
+  let numberOfSPYs = _accountStart / originalSPYPrice;
+  data2.forEach(d => 
+    {
+      var singleData = 
+      {
+         Price:'0'
+         
+      };
+      singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
+
+      singleData.Price = +d["Adjusted_close"];
+      singleData.account =  numberOfSPYs * singleData.Price;
+
+      if (this.isdateValid(singleData.Date) && singleData.Price > 0 )
+      {
+        dataSPY.push(singleData);
+        SPYprice.push(singleData.Price);
+        console.log('SPYprice= ',singleData.Price);
+      }
+
+    });
+    this.setState({ dataSPY: dataSPY })
+
 
   data3.forEach(d => 
     {
@@ -74,7 +104,7 @@ class App extends Component {
          cash:_cash,
          share:_share,
          hist:'0',
-         accountEnd:_accountStart
+         accountEnd:_accountStart,
       };
        
       singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
@@ -189,7 +219,8 @@ class App extends Component {
       histArray.push(singleData.hist);
       console.log('hist=',singleData.hist);
 
-      if (singleData.Price>0)
+
+      if (this.isdateValid(singleData.Date) && singleData.Price>0)
       {
         stockdata.push(singleData);
         singleData.account=singleData.cash+singleData.share*singleData.Price;
@@ -282,8 +313,7 @@ class App extends Component {
         var yearlySd=standardDeviation(accountArray).toFixed(1);
         return ((yearlygain-0.035)/yearlySd*100).toFixed(1);
     }
-     
-   
+
     
     // Update all the information to be displayed
     this.setState({
@@ -296,11 +326,14 @@ class App extends Component {
       standardDeviation : standardDeviation(accountArray).toFixed(1),
       percetangeGainOfSPY :((SPYprice[SPYprice.length-1]-SPYprice[0])/SPYprice[0]*100).toFixed(1),
       MaxDrawdownPercentage :drawDown(accountArray),
-      sharpeRadio :sharpeRatio()
+      sharpeRadio :sharpeRatio() 
      })
   }
 
-
+  runSimulation( )
+  {
+    
+  }
 
   render()
   {
@@ -318,10 +351,10 @@ class App extends Component {
         <div className='App-header'>
           <h4>Stock Account of AAP</h4>
         </div>
-            {<TimeLineChart data= {this.state.stockdata} size={[800,500]} yAxis={"account"}/>}
+            {<TimeLineChart data= {this.state.stockdata} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"}/>}
       </div>
       <div>
-      <DatePickerStock onDatePickedChanged={this.handleDateChanged} onStartSimulation={this.startSimulation} />
+      <DatePickerStock onDatePickedChanged={this.onDateChanged} onStartSimulation={this.startSimulation} />
       <SingleNumber header='Starting Money' value={'$'+ this.state.startingMoney}/>
       <SingleNumber header='Ending Money' value={'$'+this.state.endingMoney}/>
       <SingleNumber header='Percentage gain' value={this.state.percentangeGain +'%'}/>

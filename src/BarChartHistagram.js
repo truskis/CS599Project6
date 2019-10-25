@@ -61,7 +61,6 @@ class BarChartHistagram extends Component {
         // // And apply this function to data to get the bins
         var bins = histogram(histArray);
 
-        console.log(bins);
         // // Y axis: scale and draw:
         var y = d3.scaleLinear()
         .range([height, 0]);

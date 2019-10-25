@@ -6,10 +6,33 @@ import { Container, Row, Col } from 'react-grid-system';
 
 class DatePickerStock extends Component {
 
-  state = {
-    startDate : new Date("2009/01/01"),
-    endDate : new Date("2009/12/31")
-  };
+  constructor (props) {
+    super(props)
+    this.state = {
+      startDate : new Date("2009/01/01"),
+      endDate : new Date("2009/12/31")
+    };
+    this.handleStartChange = this.handleStartChange.bind(this);
+    this.handleEndChange = this.handleEndChange.bind(this);
+  }
+  handleStartChange(date)
+  {
+    this.setState({
+           startDate:date,
+         })
+  
+
+    this.props.onDatePickedChanged(date, this.state.endDate);
+  }
+
+  handleEndChange(date)
+  {
+    this.setState({
+      endDate:date,
+    })
+
+this.props.onDatePickedChanged(this.state.startDate,date);
+  }
 
     render() {
       const { startDate } = this.state;
@@ -33,7 +56,7 @@ class DatePickerStock extends Component {
               <DatePicker
               className='datePicker'
               selected={startDate}
-              onChange={this.handleChange} 
+              onChange={this.handleStartChange} 
               selectsStart
               startDate={startDate}
               endDate={endDate}
@@ -45,7 +68,7 @@ class DatePickerStock extends Component {
               <DatePicker
                 className='datePicker'
                 selected={endDate}
-                onChange={this.handleChange} 
+                onChange={this.handleEndChange} 
                 selectsEnd
                 endDate={endDate}
                 minDate={startDate}
@@ -63,16 +86,16 @@ class DatePickerStock extends Component {
         );
      }
 
-     handleChange = startDate => {
-      this.setState({
-        startDate
-      });
-    };
+    //  handleChange = startDate => {
+    //   this.setState({
+    //     startDate
+    //   });
+    // };
 
-      handleChange = endDate => {
-        this.setState({
-         endDate
-        });
-    };
+    //   handleChange = endDate => {
+    //     this.setState({
+    //      endDate
+    //     });
+    // };
   }
   export default DatePickerStock

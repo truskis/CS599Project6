@@ -87,6 +87,18 @@ class TimeLineChart extends Component {
                 .x(function(d) { return x(d.Date) })
                 .y(function(d) { return y(d[yName]) })
                 )
+
+         if (this.props.data2)
+         {             svg.append("path")
+                 .datum(this.props.data2)
+                .attr("fill", "none")
+                .attr("stroke", "darkgray")
+                .attr("stroke-width", 1.5)
+                .attr("d", d3.line()
+                .x(function(d) { return x(d.Date) })
+                .y(function(d) { return y(d[yName]+10000) })
+                )
+         }
          }
 
                
