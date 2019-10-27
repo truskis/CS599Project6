@@ -81,12 +81,13 @@ class App extends Component {
   let  _share=0;
   let  _accountEnd=_accountStart;
   var  accountArray=[];
+  var  dateArray=[];
   var  histArray=[];
   let  prevPrice=0;
   let  accountSum=0;
   var  SPYprice=[];
   var  vol=[];
-  var  dateStart=new Date("2/2/2009");
+  var  dateStart=new Date("3/2/2009");
   var  dateEnd=new Date('11/31/2009');
 
     let originalSPYPrice = +this.data2[0]["Adjusted_close"];
@@ -264,6 +265,7 @@ class App extends Component {
         singleData.share=_share;
         singleData.account=singleData.cash+singleData.share*singleData.Price;
         accountArray.push(singleData.account);
+        dateArray.push(singleData.Date);
         _accountEnd=singleData.account;
         accountSum+=singleData.account;
   
@@ -366,15 +368,55 @@ class App extends Component {
   
       }
   
-      function yearlyGain()
+      function yearlyGain(values)
       {
-        if((dateEnd.getTime()-dateStart.getTime())/(1000 * 3600 * 24) <= 252)
-          return ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1);
+        //var range=(dateEnd.getTime()-dateStart.getTime())/(1000 * 3600 * 24);
+        //var range=values.length();
+        //if((dateEnd.getTime()-dateStart.getTime())/(1000 * 3600 * 24) <= 252)
+        //return ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1);
+        // var countDay=values.reduce(function(countDay,d,i)
+        // {
+        //   countDay=countDay+1;
+        // },0);
+        var firstDayAccount=values[0];
+        var lastDayAccount=values[0];
+        var firstYear= dateArray[0].getFullYear();
+        var lastYear=dateArray[dateArray.length-1].getFullYear();
+        var gain=[];
+        if(firstYear==lastYear)
+        {
+          return (accountArray[accountArray.length-1]-accountArray[0])/accountArray[0]*100;
+        } 
+        else
+        {
+          for(var i=0;i<values.length;i++)
+          {
+            
+            if(i+1<values.length && dateArray[i].getFullYear()==firstYear+1)
+            {
+              lastDayAccount=accountArray[i];
+              var yealygain=(lastDayAccount-firstDayAccount)/firstDayAccount*100;
+              gain.push(yealygain);
+              firstYear=firstYear+1;
+              if(firstYear==lastYear)
+              {
+                var lastgain=(accountArray[accountArray.length-1]-accountArray[i+1])/accountArray[i+1]*100;
+                gain.push(lastgain);
+                break;
+              }
+            }
+          }
+        }
+        var gainSum=0;
+        for(var i=0;i<gain.length;i++)
+          gainSum+=gain[i];
+        
+        return gainSum/gain.length;
       }
   
       function sharpeRatio()
       {
-          var yearlygain=yearlyGain();
+          var yearlygain=yearlyGain(accountArray);
           var yearlySd=standardDeviation(accountArray).toFixed(1);
           return ((yearlygain-0.035)/yearlySd).toFixed(1);
       }  
@@ -385,8 +427,8 @@ class App extends Component {
         histArray: histArray,
         startingMoney : _accountStart.toFixed(2),
         endingMoney : _accountEnd.toFixed(2),
-        percentangeGain :   yearlyGain(),
-        averagePercentagegain : ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1),
+        percentangeGain :   ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1),
+        averagePercentagegain : yearlyGain(accountArray).toFixed(1),
         standardDeviation : standardDeviation(accountArray).toFixed(1),
         percetangeGainOfSPY :((SPYprice[SPYprice.length-1]-SPYprice[0])/SPYprice[0]*100).toFixed(1),
         MaxDrawdownPercentage :drawDown(accountArray),
@@ -418,7 +460,7 @@ class App extends Component {
       <SingleNumber header='Ending Money' value={'$'+this.state.endingMoney}/>
       <SingleNumber header='Percentage gain' value={this.state.percentangeGain +'%'}/>
       <SingleNumber header='Avg yearly percetange gain' value={this.state.averagePercentagegain +'%'}/>
-      <SingleNumber header='Standard deviation' value={this.state.standardDeviation}/>
+      <SingleNumber header='Standard deviation' value={this.state.standardDeviation+'%'}/>
       <SingleNumber header='Percentage gain of SPY ' value={this.state.percetangeGainOfSPY +'%'}/>
       <SingleNumber header='Max drawdown percentage' value={this.state.MaxDrawdownPercentage +'%'}/>
       <SingleNumber header='Sharpe Ratio' value={this.state.sharpeRadio}/>
