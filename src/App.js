@@ -4,8 +4,10 @@ import BarChartHistagram from './BarChartHistagram';
 import TimeLineChart from './Stocks/TimeLineChart';
 import {csv} from 'd3';
 import * as d3 from "d3";
-import SingleNumber from './Helpers/SingleNumber'
-import DatePickerStock from './Helpers/DatePickerStock'
+import SingleNumber from './Helpers/SingleNumber';
+import DatePickerStock from './Helpers/DatePickerStock';
+import moment from 'react-moment';
+import DateTime from 'react-datetime';
 
 class App extends Component {
 
@@ -14,7 +16,8 @@ class App extends Component {
    super();
    this.state = { data : [["",10], ["",20], ["",30]], 
    dataSPY : [], 
-   stockdata: [], 
+   stockdata1: [], 
+   stockdata3: [],
    stocksData: [[]], 
    histArray: [], 
    test:0, 
@@ -23,6 +26,8 @@ class App extends Component {
 
    let data3;
    let data2;
+   let data4;
+   let data1;
    this.onDateChanged = this.onDateChanged.bind(this);
    this.runSimulation = this.runSimulation.bind(this);
  }
@@ -51,8 +56,10 @@ class App extends Component {
   async componentDidMount() {
 
   //load data
-  this.data3  = await csv('./AAP.csv');
-  this.data2  = await csv('./SPY.csv');
+  this.data4  = await csv('./AAP.csv');
+  this.data3  = await csv('./AAP.csv'); // single selection algorithm
+  this.data2  = await csv('./SPY.csv'); // get SPY stock
+  this.data1  = await csv('./AAP.csv'); // get one stock date, price,volumn
 
 
   this.runSimulation();
@@ -62,7 +69,12 @@ class App extends Component {
 
   runSimulation( )
   {
-  let  stockdata = [];
+  let  stockdata1 = [];
+  let  dataSPY = [];
+  let  stockdata3 = [];
+  var  date=[];
+  var  price=[];
+  var  volume=[];
   var  ma=[];
   let  _accountStart=100000;
   let  _cash=100000;
@@ -72,11 +84,38 @@ class App extends Component {
   var  histArray=[];
   let  prevPrice=0;
   let  accountSum=0;
-  let  dataSPY = [];
   var  SPYprice=[];
+  var  vol=[];
+  var  dateStart=new Date("2/2/2009");
+  var  dateEnd=new Date('11/31/2009');
 
     let originalSPYPrice = +this.data2[0]["Adjusted_close"];
     let numberOfSPYs = _accountStart / originalSPYPrice;
+    
+    //single stock price,date and volume
+    this.data1.forEach(d => 
+      {
+        var singleData = 
+        {
+           Date: '0',
+           Price:'0',
+           Volume:'0'          
+        };
+         
+        singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
+        singleData.Price = +d["Adjusted_close"];
+        singleData.Volume = +d["Volume"];  
+       
+        if (this.isdateValid(singleData.Date) && singleData.Price>0 )
+        {
+          stockdata1.push(singleData);
+          //console.log("data1 Price: ",singleData.Price);
+        }       
+  
+      });
+      this.setState({ data1: stockdata1 })
+    
+    // SPY date,price,volume
     this.data2.forEach(d => 
       {
         var singleData = 
@@ -89,7 +128,7 @@ class App extends Component {
         singleData.Price = +d["Adjusted_close"];
         singleData.account =  numberOfSPYs * singleData.Price;
   
-        if (this.isdateValid(singleData.Date) && singleData.Price > 0 )
+        if (this.isdateValid(singleData.Date) && singleData.Price>0 )
         {
           dataSPY.push(singleData);
           SPYprice.push(singleData.Price);
@@ -99,11 +138,13 @@ class App extends Component {
 
       this.setState({ dataSPY: dataSPY })
   
-  
+    // investment1
     this.data3.forEach(d => 
       {
         var singleData = 
         {
+           Date: '0',
+           DateStr: '0',
            Price:'0',
            Volume:'0',
            MA5:'0',
@@ -119,11 +160,20 @@ class App extends Component {
            hist:'0',
            accountEnd:_accountStart,
         };
-         
+        
         singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
+        singleData.DateStr=d["Date"];
         singleData.Price = +d["Adjusted_close"];
-        singleData.Volume = +d["Volume"];      
+        singleData.Volume = +d["Volume"];         
+        
+        if(singleData.Date.getTime()>=dateStart.getTime() 
+          && singleData.Date.getTime()<=dateEnd.getTime())
+        {
+          console.log("found");
+        
+
         ma.push(singleData.Price);
+        vol.push(singleData.Volume);
   
         singleData.MA5=ma.reduce(function(sum, d, i) {        
           if(ma.length<5) return 0.0;  
@@ -173,6 +223,7 @@ class App extends Component {
         singleData.MA5BuyFlag=ma.reduce(function(flag,d,i) {
           if(i>=30 && ma[i]<ma[i-1] && ma[i-1]<ma[i-2]
             && singleData.MA10>singleData.MA5 
+            && vol[i]<vol[i-1]
             )
             flag=true;
           else
@@ -183,6 +234,7 @@ class App extends Component {
         singleData.MA5SellFlag=ma.reduce(function(flag,d,i) {
           if(i>=30 && ma[i]>ma[i-1] && ma[i-1]>ma[i-2]
             && singleData.MA10<singleData.MA5 
+            && vol[i]>vol[i-1]
             )
             flag=true;
           else
@@ -234,7 +286,7 @@ class App extends Component {
         if (this.isdateValid(singleData.Date) && singleData.Price>0)
         {
           histArray.push(singleData.hist);
-          stockdata.push(singleData);
+          stockdata3.push(singleData);
           singleData.account=singleData.cash+singleData.share*singleData.Price;
           // console.log("Date=",singleData.Date,
           //             " Account=",singleData.account,
@@ -248,12 +300,10 @@ class App extends Component {
           //             " Sell=",singleData.MA5SellFlag);    
           //console.log('accountEnd=',singleData.accountEnd); 
         }
-        
+      }       
   
       });
-     // console.log('accountArray=',accountArray);
-      //console.log('histArray= ',JSON.stringify(histArray));
-  
+
       function standardDeviation(values){
         var avg = average(values);
         
@@ -265,7 +315,7 @@ class App extends Component {
         
         var avgSquareDiff = average(squareDiffs);
       
-        var stdDev = Math.sqrt(avgSquareDiff);
+        var stdDev = Math.sqrt(avgSquareDiff)/_accountStart*100;
         return stdDev;
       }
       
@@ -299,16 +349,18 @@ class App extends Component {
         {
           if(i>accountMaxIndex )
             {
-              if(accountMin<d)
+              if(accountMin>d)
                 return d;
               else
                 return accountMin;
             }
           else
-            return 0;
+            return accountMax;
         },accountMax);
   
         var maxdrawDown= (accountMax-accountMin)/accountMax*100;
+
+        console.log('accountMax= ',accountMax, ", accountMin= ", accountMin);
         
         return maxdrawDown.toFixed(1);
   
@@ -316,20 +368,20 @@ class App extends Component {
   
       function yearlyGain()
       {
-        return ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1);
+        if((dateEnd.getTime()-dateStart.getTime())/(1000 * 3600 * 24) <= 252)
+          return ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1);
       }
   
       function sharpeRatio()
       {
           var yearlygain=yearlyGain();
           var yearlySd=standardDeviation(accountArray).toFixed(1);
-          return ((yearlygain-0.035)/yearlySd*100).toFixed(1);
-      }
-  
+          return ((yearlygain-0.035)/yearlySd).toFixed(1);
+      }  
       
       // Update all the information to be displayed
       this.setState({
-        stockdata: stockdata,
+        stockdata3: stockdata3,
         histArray: histArray,
         startingMoney : _accountStart.toFixed(2),
         endingMoney : _accountEnd.toFixed(2),
@@ -358,7 +410,7 @@ class App extends Component {
         <div className='App-header'>
           <h4>Stock Account of AAP</h4>
         </div>
-            {<TimeLineChart data= {this.state.stockdata} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"}/>}
+            {<TimeLineChart data= {this.state.stockdata3} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"}/>}
       </div>
       <div>
       <DatePickerStock onDatePickedChanged={this.onDateChanged} onStartSimulation={this.runSimulation} />
