@@ -10,7 +10,7 @@ import Select from 'react-select';
 
 const stocksOptions = 
 [
-  { value: 'data1', label: 'AAP' },
+  { value: 'stockdata', label: 'AAP' },
   { value: 'dataSPY', label: 'SPY' },
 ];
 class App extends Component {
