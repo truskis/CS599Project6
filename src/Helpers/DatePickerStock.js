@@ -47,7 +47,7 @@ this.props.onDatePickedChanged(this.state.startDate,date);
       const { startDate } = this.state;
       const { endDate } = this.state;
         return (
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ margin: '15px 15px 15px 35px'}}>
           <Container fluid className='datePickerContainer'>
           <Row justify="center" className='App-numberHeader' >
             Configuration
