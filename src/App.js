@@ -22,8 +22,9 @@ class App extends Component {
    stocksData: [[]], 
    histArray: [], 
    test:0, 
-   startDate:d3.timeParse("%m/%d/%Y")("01/01/2009"),
-   endDate:d3.timeParse("%m/%d/%Y")("12/31/2009")}
+
+   startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
+   endDate:d3.timeParse("%m/%d/%Y")("11/31/2009")}
 
    let data3;
    let data2;
@@ -87,8 +88,6 @@ class App extends Component {
   var  accountSum=0;
   var  SPYprice=[];
   var  vol=[];
-  var  dateStart=new Date("3/2/2009");
-  var  dateEnd=new Date('11/31/2009');
 
     let originalSPYPrice = +this.data2[0]["Adjusted_close"];
     let numberOfSPYs = _accountStart / originalSPYPrice;
@@ -167,8 +166,7 @@ class App extends Component {
         singleData.Price = +d["Adjusted_close"];
         singleData.Volume = +d["Volume"];         
         
-        if(singleData.Date.getTime()>=dateStart.getTime() 
-          && singleData.Date.getTime()<=dateEnd.getTime())
+        if(this.isdateValid(singleData.Date.getTime()))
         {
 
         ma.push(singleData.Price);
