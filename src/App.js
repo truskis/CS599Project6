@@ -21,9 +21,8 @@ class App extends Component {
    stocksData: [[]], 
    histArray: [], 
    test:0, 
-
-   startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
-   endDate:d3.timeParse("%m/%d/%Y")("11/31/2009")}
+   startDate:d3.timeParse("%m/%d/%Y")("01/01/2009"),
+   endDate:d3.timeParse("%m/%d/%Y")("12/31/2009")}
 
    let data3;
    let data2;
@@ -98,20 +97,76 @@ class App extends Component {
         {
            Date: '0',
            Price:'0',
-           Volume:'0'          
+           Volume:'0',
+           MA5:'0',
+           MA10:'0',
+           MA20:'0',
+           MA30:'0'          
         };
          
         singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
         singleData.Price = +d["Adjusted_close"];
         singleData.Volume = +d["Volume"];  
+        if(singleData.Date.getTime()>=this.state.startDate.getTime() 
+        && singleData.Date.getTime()<=this.state.endDate.getTime())
+      {
+
+      ma.push(singleData.Price);
+      vol.push(singleData.Volume);
+
+      singleData.MA5=ma.reduce(function(sum, d, i) {        
+        if(ma.length<5) return 0.0;  
+        var j=ma.length-5;
+        if(i>=j)     
+        { 
+          return sum+d;   
+        }     
+        return 0;
+      }, 0);
+      singleData.MA5=singleData.MA5/5.0;
+
+      singleData.MA10=ma.reduce(function(sum, d, i) {        
+        if(ma.length<10) return 0.0;  
+        var j=ma.length-10;
+        if(i>=j)     
+        { 
+          return sum+d;   
+        }     
+        return 0;
+      }, 0);
+      singleData.MA10=singleData.MA10/10.0;
+
+      singleData.MA20=ma.reduce(function(sum, d, i) {        
+        if(ma.length<20) return 0.0;  
+        var j=ma.length-20;
+        if(i>=j)     
+        { 
+          return sum+d;   
+        }     
+        return 0;
+      }, 0);
+      singleData.MA20=singleData.MA20/20.0;
+
+      singleData.MA30=ma.reduce(function(sum, d, i) {        
+        if(ma.length<30) return 0.0;  
+        var j=ma.length-30;
+        if(i>=j)     
+        { 
+          return sum+d;   
+        }     
+        return 0;
+      }, 0);
+      singleData.MA30=singleData.MA30/30.0;
+    
        
-        if (this.isdateValid(singleData.Date) && singleData.Price>0 )
+      if (this.isdateValid(singleData.Date) && singleData.Price>0 )
         {
           stockdata1.push(singleData);
           //console.log("data1 Price: ",singleData.Price);
-        }       
+        }    
+      }   
   
-      });
+    });
       this.setState({ data1: stockdata1 })
     
     // SPY date,price,volume
@@ -165,12 +220,8 @@ class App extends Component {
         singleData.Price = +d["Adjusted_close"];
         singleData.Volume = +d["Volume"];         
         
-<<<<<<< HEAD
         if(singleData.Date.getTime()>=this.state.startDate.getTime() 
           && singleData.Date.getTime()<=this.state.endDate.getTime())
-=======
-        if(this.isdateValid(singleData.Date.getTime()))
->>>>>>> 19e3047ecc26107161b672fea94ff39b01748db7
         {
 
         ma.push(singleData.Price);
@@ -352,7 +403,7 @@ class App extends Component {
   
         var maxdrawDown= (accountMax-accountMin)/accountMax*100;
         return maxdrawDown.toFixed(1);
-  
+        //return accountMin;
       }
   
       function yearlyGain(values)
