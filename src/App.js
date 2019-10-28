@@ -21,8 +21,9 @@ class App extends Component {
    stocksData: [[]], 
    histArray: [], 
    test:0, 
-   startDate:d3.timeParse("%m/%d/%Y")("01/01/2009"),
-   endDate:d3.timeParse("%m/%d/%Y")("12/31/2009")}
+
+   startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
+   endDate:d3.timeParse("%m/%d/%Y")("11/31/2009")}
 
    let data3;
    let data2;
@@ -164,8 +165,12 @@ class App extends Component {
         singleData.Price = +d["Adjusted_close"];
         singleData.Volume = +d["Volume"];         
         
+<<<<<<< HEAD
         if(singleData.Date.getTime()>=this.state.startDate.getTime() 
           && singleData.Date.getTime()<=this.state.endDate.getTime())
+=======
+        if(this.isdateValid(singleData.Date.getTime()))
+>>>>>>> 19e3047ecc26107161b672fea94ff39b01748db7
         {
 
         ma.push(singleData.Price);
