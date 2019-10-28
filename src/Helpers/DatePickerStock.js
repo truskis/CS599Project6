@@ -3,6 +3,14 @@ import './../App.css';
 import React, { Component } from 'react'
 import "react-datepicker/dist/react-datepicker.css";
 import { Container, Row, Col } from 'react-grid-system';
+import Select from 'react-select';
+
+const strategyOptions = [
+  { value: 'strategy1', label: 'strategy1' },
+  { value: 'strategy2', label: 'strategy2' },
+  { value: 'strategy3', label: 'strategy3' },
+  { value: 'strategy4', label: 'strategy4' }
+];
 
 class DatePickerStock extends Component {
 
@@ -30,6 +38,7 @@ class DatePickerStock extends Component {
     this.setState({
       endDate:date,
     })
+  
 
 this.props.onDatePickedChanged(this.state.startDate,date);
   }
@@ -41,7 +50,7 @@ this.props.onDatePickedChanged(this.state.startDate,date);
           <div style={{ display: 'inline-block' }}>
           <Container fluid className='datePickerContainer'>
           <Row justify="center" className='App-numberHeader' >
-            Time range
+            Configuration
             </Row>
             <Row style={{ margin: '12px 0px 12px 0px' }}>
               <Col  justify="center" >
@@ -75,6 +84,16 @@ this.props.onDatePickedChanged(this.state.startDate,date);
                 maxDate={new Date("2009/12/31")}
               />
               </Col>
+            </Row>
+            <Row style={{ margin: '12px 0px 12px 0px' }}> 
+              <Col >
+            <Select 
+              options={strategyOptions} 
+              defaultValue={{ label: "Select a strategy", value: 0 } }
+              onChange={e => {
+                this.props.onStrategyChanged(e.value);
+                ;}} />
+            </Col>
             </Row>
             <Row >
               <Col>

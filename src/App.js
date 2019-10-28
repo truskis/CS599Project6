@@ -6,8 +6,6 @@ import {csv} from 'd3';
 import * as d3 from "d3";
 import SingleNumber from './Helpers/SingleNumber';
 import DatePickerStock from './Helpers/DatePickerStock';
-import moment from 'react-moment';
-import DateTime from 'react-datetime';
 
 class App extends Component {
 
@@ -24,14 +22,18 @@ class App extends Component {
    test:0, 
 
    startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
-   endDate:d3.timeParse("%m/%d/%Y")("11/31/2009")}
+   endDate:d3.timeParse("%m/%d/%Y")("11/31/2009"),
+   strategy:'strategy1'
+  }
 
    let data3;
    let data2;
    let data4;
    let data1;
    this.onDateChanged = this.onDateChanged.bind(this);
+   this.onStrategyChanged = this.onStrategyChanged.bind(this);
    this.runSimulation = this.runSimulation.bind(this);
+
  }
 
 
@@ -40,6 +42,13 @@ class App extends Component {
 //    console.log("simulation satrted");
 //   this.runSimulation();
 //  }
+onStrategyChanged(newStrategy)
+{
+  console.log('strat choseen' + newStrategy);
+ this.setState({
+  strategy: newStrategy,
+ });
+}
  onDateChanged(newStartDate, newEndDate)
  {
   this.setState({
@@ -69,7 +78,7 @@ class App extends Component {
  
   }
 
-  runSimulation( )
+  runSimulation()
   {
   let  stockdata1 = [];
   let  dataSPY = [];
@@ -702,7 +711,7 @@ class App extends Component {
             {<TimeLineChart data= {this.state.stockdata3} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"}/>}
       </div>
       <div>
-      <DatePickerStock onDatePickedChanged={this.onDateChanged} onStartSimulation={this.runSimulation} />
+      <DatePickerStock onDatePickedChanged={this.onDateChanged} onStartSimulation={this.runSimulation} onStrategyChanged={this.onStrategyChanged} />
       <SingleNumber header='Starting Money' value={'$'+ this.state.startingMoney}/>
       <SingleNumber header='Ending Money' value={'$'+this.state.endingMoney}/>
       <SingleNumber header='Percentage gain' value={this.state.percentangeGain +'%'}/>
