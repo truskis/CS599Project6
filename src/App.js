@@ -7,7 +7,6 @@ import * as d3 from "d3";
 import SingleNumber from './Helpers/SingleNumber';
 import DatePickerStock from './Helpers/DatePickerStock';
 
-
 class App extends Component {
 
  constructor()
@@ -21,15 +20,25 @@ class App extends Component {
    stocksData: [[]], 
    histArray: [], 
    test:0, 
+<<<<<<< HEAD
    startDate:d3.timeParse("%m/%d/%Y")("01/01/2009"),
    endDate:d3.timeParse("%m/%d/%Y")("12/31/2009")}
+=======
+
+   startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
+   endDate:d3.timeParse("%m/%d/%Y")("11/31/2009"),
+   strategy:'strategy1'
+  }
+>>>>>>> 932fcaaa0d8ee252e44b5eacd11b1a360a9cc84a
 
    let data3;
    let data2;
    let data4;
    let data1;
    this.onDateChanged = this.onDateChanged.bind(this);
+   this.onStrategyChanged = this.onStrategyChanged.bind(this);
    this.runSimulation = this.runSimulation.bind(this);
+
  }
 
 
@@ -38,6 +47,13 @@ class App extends Component {
 //    console.log("simulation satrted");
 //   this.runSimulation();
 //  }
+onStrategyChanged(newStrategy)
+{
+  console.log('strat choseen' + newStrategy);
+ this.setState({
+  strategy: newStrategy,
+ });
+}
  onDateChanged(newStartDate, newEndDate)
  {
   this.setState({
@@ -67,7 +83,7 @@ class App extends Component {
  
   }
 
-  runSimulation( )
+  runSimulation()
   {
   let  stockdata1 = [];
   let  dataSPY = [];
@@ -220,8 +236,12 @@ class App extends Component {
         singleData.Price = +d["Adjusted_close"];
         singleData.Volume = +d["Volume"];         
         
+<<<<<<< HEAD
         if(singleData.Date.getTime()>=this.state.startDate.getTime() 
           && singleData.Date.getTime()<=this.state.endDate.getTime())
+=======
+        if(this.isdateValid(singleData.Date.getTime()))
+>>>>>>> 932fcaaa0d8ee252e44b5eacd11b1a360a9cc84a
         {
 
         ma.push(singleData.Price);
@@ -489,7 +509,7 @@ class App extends Component {
             {<TimeLineChart data= {this.state.stockdata3} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"}/>}
       </div>
       <div>
-      <DatePickerStock onDatePickedChanged={this.onDateChanged} onStartSimulation={this.runSimulation} />
+      <DatePickerStock onDatePickedChanged={this.onDateChanged} onStartSimulation={this.runSimulation} onStrategyChanged={this.onStrategyChanged} />
       <SingleNumber header='Starting Money' value={'$'+ this.state.startingMoney}/>
       <SingleNumber header='Ending Money' value={'$'+this.state.endingMoney}/>
       <SingleNumber header='Percentage gain' value={this.state.percentangeGain +'%'}/>
