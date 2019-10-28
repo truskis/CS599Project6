@@ -67,9 +67,18 @@ class TimeLineChart extends Component {
        .attr("transform", function(d) {
            return "translate(" + this.getBBox().height*-2 + "," + this.getBBox().height + ")rotate(-45)";});
             
+         
+         var yMax = d3.max(data.map (d => { return d[yName];}));
+
+         if (this.props.data2)
+         {
+            var data2MAx =  d3.max(this.props.data2.map (d => { return d[yName];}));
+            yMax = data2MAx > yMax ? data2MAx : yMax;
+         }
+
          // Add Y axis
          var y = d3.scaleLinear()
-            .domain([0, d3.max(data.map (d => { return d[yName];})) + 1])
+            .domain([0, yMax *1.05])
             .range([ height, 0]);
             svg.append("g")
             .attr("class", "axis")

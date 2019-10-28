@@ -109,8 +109,6 @@ onStrategyChanged(newStrategy)
   var  SPYprice=[];
   var  vol=[];
 
-    let originalSPYPrice = +this.data2[0]["Adjusted_close"];
-    let numberOfSPYs = _accountStart / originalSPYPrice;
     
     //single stock price,date and volume
     this.data1.forEach(d => 
@@ -135,6 +133,9 @@ onStrategyChanged(newStrategy)
       });
       this.setState({ data1: stockdata1 })
     
+
+
+      let numberOfSPYs = 0 ;
     // SPY date,price,volume
     this.data2.forEach(d => 
       {
@@ -146,10 +147,15 @@ onStrategyChanged(newStrategy)
         singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
   
         singleData.Price = +d["Adjusted_close"];
-        singleData.account =  numberOfSPYs * singleData.Price;
   
         if (this.isdateValid(singleData.Date) && singleData.Price>0 )
         {
+          if (numberOfSPYs == 0)
+          {
+            let originalSPYPrice = singleData.Price;
+            numberOfSPYs = _accountStart / originalSPYPrice;
+          }
+          singleData.account =  numberOfSPYs * singleData.Price;
           dataSPY.push(singleData);
           SPYprice.push(singleData.Price);
         }
