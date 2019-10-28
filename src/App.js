@@ -6,12 +6,29 @@ import {csv} from 'd3';
 import * as d3 from "d3";
 import SingleNumber from './Helpers/SingleNumber';
 import DatePickerStock from './Helpers/DatePickerStock';
+import Select from 'react-select';
 
+const stocksOptions = 
+[
+  { value: 'data1', label: 'AAP' },
+  { value: 'dataSPY', label: 'SPY' },
+];
 class App extends Component {
 
  constructor()
  {
    super();
+
+   
+   let data3;
+   let data2;
+   let data4;
+   let data1;
+   this.onDateChanged = this.onDateChanged.bind(this);
+   this.onStrategyChanged = this.onStrategyChanged.bind(this);
+   this.runSimulation = this.runSimulation.bind(this);
+
+
    this.state = { data : [["",10], ["",20], ["",30]], 
    dataSPY : [], 
    stockdata1: [], 
@@ -23,16 +40,9 @@ class App extends Component {
 
    startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
    endDate:d3.timeParse("%m/%d/%Y")("11/31/2009"),
-   strategy:'strategy1'
+   strategy:'strategy1',
+   stockToDisplay: this['data1']
   }
-
-   let data3;
-   let data2;
-   let data4;
-   let data1;
-   this.onDateChanged = this.onDateChanged.bind(this);
-   this.onStrategyChanged = this.onStrategyChanged.bind(this);
-   this.runSimulation = this.runSimulation.bind(this);
 
  }
 
@@ -71,6 +81,7 @@ onStrategyChanged(newStrategy)
   this.data3  = await csv('./AAP.csv'); // single selection algorithm
   this.data2  = await csv('./SPY.csv'); // get SPY stock
   this.data1  = await csv('./AAP.csv'); // get one stock date, price,volumn
+  // importnat when adding  a new stock please add it to this too: stocksOptions
 
 
   this.runSimulation();
@@ -417,7 +428,8 @@ onStrategyChanged(newStrategy)
         standardDeviation : standardDeviation(accountArray).toFixed(1),
         percetangeGainOfSPY :((SPYprice[SPYprice.length-1]-SPYprice[0])/SPYprice[0]*100).toFixed(1),
         MaxDrawdownPercentage :drawDown(accountArray),
-        sharpeRadio :sharpeRatio() 
+        sharpeRadio :sharpeRatio(),
+        stockToDisplay: this['data1']
        })
        
   }
@@ -429,19 +441,6 @@ onStrategyChanged(newStrategy)
 
   return (
     <div className='App'>
-      <div id="divLineChart"  className='Chart'>
-        <div className='App-header'>
-          <h4>Histagram of daily gains/losses</h4>
-        </div>
-            {<BarChartHistagram data= {this.state.histArray} size={[800,500]}/>}
-      </div>
-
-      <div className='Chart'>
-        <div className='App-header'>
-          <h4>Stock Account of AAP</h4>
-        </div>
-            {<TimeLineChart data= {this.state.stockdata3} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"}/>}
-      </div>
       <div>
       <DatePickerStock onDatePickedChanged={this.onDateChanged} onStartSimulation={this.runSimulation} onStrategyChanged={this.onStrategyChanged} />
       <SingleNumber header='Starting Money' value={'$'+ this.state.startingMoney}/>
@@ -453,6 +452,39 @@ onStrategyChanged(newStrategy)
       <SingleNumber header='Max drawdown percentage' value={this.state.MaxDrawdownPercentage +'%'}/>
       <SingleNumber header='Sharpe Ratio' value={this.state.sharpeRadio}/>
     </div>
+    <div id="divLineChart"  className='Chart'>
+        <div className='App-header'>
+          <h4>Histagram of daily gains/losses</h4>
+        </div>
+            {<BarChartHistagram data= {this.state.histArray} size={[800,500]}/>}
+      </div>
+
+      <div className='Chart'>
+        <div className='App-header'>
+          <h4>Stock Account of AAP</h4>
+        </div>
+        <p style={{ color: 'steelblue', textAlign:'right' }}>
+           ▀ Account value
+        </p> 
+        <p style={{ color: 'darkgray', textAlign:'right' }}>
+         ▀ Account value if invested on Spy
+        </p>
+            {<TimeLineChart data= {this.state.stockdata3} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"}/>}
+      </div>
+      <div className='Chart'>
+        <div className='App-header'>
+          <h4>Stock Price Overtime</h4>
+        </div>
+        <Select 
+              options={stocksOptions} 
+              defaultValue={{ label: "Select a stock to display", value: 0 } }
+              onChange={e => {
+                this.setState({
+                  stockToDisplay: this.state[e.value]
+                  });
+                ;}} />
+            {<TimeLineChart data= {this.state.stockToDisplay} size={[800,500]} yAxis={"Price"}/>}
+      </div>
     </div>
   );
   }

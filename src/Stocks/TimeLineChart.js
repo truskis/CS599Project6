@@ -21,7 +21,7 @@ class TimeLineChart extends Component {
    createChart() 
    {
       //console.log(this.props.data.length);
-       if(this.props.data.length > 0)
+       if(this.props.data && this.props.data.length > 0)
        {
          var data = this.props.data;
          const node = this.node;
