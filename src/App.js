@@ -467,13 +467,7 @@ onStrategyChanged(newStrategy)
         <div className='App-header'>
           <h4>Stock Account of AAP</h4>
         </div>
-        <p style={{ color: 'steelblue', textAlign:'right' }}>
-           ▀ Account value
-        </p> 
-        <p style={{ color: 'darkgray', textAlign:'right' }}>
-         ▀ Account value if invested on Spy
-        </p>
-            {<TimeLineChart data= {this.state.stockdata3} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"}/>}
+            {<TimeLineChart data= {this.state.stockdata3} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"} lineNames={["Cash account", "Cash if invested on Spy"]}/>}
       </div>
       <div className='Chart'>
         <div className='App-header'>
@@ -487,7 +481,13 @@ onStrategyChanged(newStrategy)
                   stockToDisplay: this.state[e.value]
                   });
                 ;}} />
-            {<TimeLineChart data= {this.state.stockToDisplay} size={[800,500]} yAxis={"Price"}/>}
+            {<TimeLineChart data= {this.state.stockToDisplay} size={[800,460]} yAxis={"Price"} />}
+      </div>
+      <div className='Chart'>
+        <div className='App-header'>
+          <h4>MAs</h4>
+        </div>
+            {<TimeLineChart data= {this.state.stockdata3} size={[800,500]} yAxises={["MA5","MA10", "MA20", "MA30"]}/>}
       </div>
     </div>
   );
