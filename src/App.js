@@ -441,8 +441,11 @@ onStrategyChanged(newStrategy)
 
   return (
     <div className='App'>
+      <div className='Root'>
       <div>
       <DatePickerStock onDatePickedChanged={this.onDateChanged} onStartSimulation={this.runSimulation} onStrategyChanged={this.onStrategyChanged} />
+      </div>
+      <div>
       <SingleNumber header='Starting Money' value={'$'+ this.state.startingMoney}/>
       <SingleNumber header='Ending Money' value={'$'+this.state.endingMoney}/>
       <SingleNumber header='Percentage gain' value={this.state.percentangeGain +'%'}/>
@@ -451,6 +454,7 @@ onStrategyChanged(newStrategy)
       <SingleNumber header='Percentage gain of SPY ' value={this.state.percetangeGainOfSPY +'%'}/>
       <SingleNumber header='Max drawdown percentage' value={this.state.MaxDrawdownPercentage +'%'}/>
       <SingleNumber header='Sharpe Ratio' value={this.state.sharpeRadio}/>
+      </div>
     </div>
     <div id="divLineChart"  className='Chart'>
         <div className='App-header'>

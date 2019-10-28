@@ -50,6 +50,12 @@ background-color: #cf8585;
 .App-link {
   color: #09d3ac;
 }
+
+
+.Root {
+  display:flex;
+   flex-direction:row;
+}
 .Chart
 {
   margin: 10px;
