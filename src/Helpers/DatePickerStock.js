@@ -8,8 +8,8 @@ import Select from 'react-select';
 const strategyOptions = [
   { value: 'strategy1', label: 'strategy1' },
   { value: 'strategy2', label: 'strategy2' },
-  { value: 'strategy3', label: 'strategy3' },
-  { value: 'strategy4', label: 'strategy4' }
+  // { value: 'strategy3', label: 'strategy3' },
+  // { value: 'strategy4', label: 'strategy4' }
 ];
 
 class DatePickerStock extends Component {
