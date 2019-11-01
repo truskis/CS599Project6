@@ -21,13 +21,6 @@ class BarChartHistagram extends Component {
 
     createBarChart() 
     {
-        if (this.props.data.length <= 0 )
-           return;
-
-        var histArray = this.props.data;
-
-
-        //histArray = histArray.map
         const node = this.node
 
          // set the dimensions and margins of the graph
@@ -42,7 +35,13 @@ class BarChartHistagram extends Component {
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+        if (this.props.data.length <= 0 )
+           return;
 
+        var histArray = this.props.data;
+
+
+        //histArray = histArray.map
 
         // X axis: scale and draw:
         var x = d3.scaleLinear()

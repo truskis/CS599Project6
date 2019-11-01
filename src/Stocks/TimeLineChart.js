@@ -28,33 +28,35 @@ class TimeLineChart extends Component {
          
        this.createChart()
     }
-   createChart() 
-   {
+
+  createChart() 
+  {
+    const node = this.node;
+    const padding = { top: 0, right: 0, bottom: 0, left: 0 };
+    const yName = this.props.yAxes ? this.props.yAxes[0] : this.props.yAxis;
+   
+    // set the dimensions and margins of the graph
+    var margin = {top: 40, right: 40, bottom: 60, left: 80},
+    width =this.props.size[0] - margin.left - margin.right,
+    height = this.props.size[1] - margin.top - margin.bottom;
+
+    var svg =
+      d3.select(node)
+        .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform",
+                `translate(${margin.left},${margin.top})`);
+
       //console.log(this.props.data.length);
-       if(this.props.data && this.props.data.length > 0)
-       {
-         var data = this.props.data;
-         const node = this.node;
-         const padding = 0;
-         const yName = this.props.yAxises ? this.props.yAxises[0] : this.props.yAxis;
-      
-         // set the dimensions and margins of the graph
-         var margin = {top: 40, right: 40, bottom: 60, left: 80},
-         width =this.props.size[0] - margin.left - margin.right,
-         height = this.props.size[1] - margin.top - margin.bottom;
-
-         var svg = d3.select(node)
-                  .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform",
-                  "translate(" + margin.left + "," + margin.top + ")");
-
+    if (this.props.data)
+    {
+      const data = this.props.data;
            // Add X axis
          var x = d3.scaleTime()
-            .domain(d3.extent(data, function(d) { return d.Date; }))
-            .range([padding, width - padding * 2]);
+            .domain(d3.extent(data, function(d) { return d.time; }))
+            .range([padding.left, width - padding.right]);
             svg.append("g")
             .attr("class", "axis")
             .attr("transform", "translate(0," + height + ")")
@@ -72,8 +74,8 @@ class TimeLineChart extends Component {
 
          if (this.props.data2)
          {
-            var data2MAx =  d3.max(this.props.data2.map (d => { return d[yName];}));
-            yMax = data2MAx > yMax ? data2MAx : yMax;
+            var dataSPYMax =  d3.max(this.props.data2.map (d => { return d[yName];}));
+            yMax = dataSPYMax > yMax ? dataSPYMax : yMax;
          }
 
          // Add Y axis
@@ -93,7 +95,7 @@ class TimeLineChart extends Component {
          var legend = false;
 
 
-         if (this.props.yAxis && data.length >0)
+         if (this.props.yAxis)
          {
             if (this.props.lineNames)
             {
@@ -118,7 +120,7 @@ class TimeLineChart extends Component {
              .attr("stroke", this.props.lineNames ? color(keys[0]) : 'steelblue')
              .attr("stroke-width", 1.5)
              .attr("d", d3.line()
-                .x(function(d) { return x(d.Date) })
+                .x(function(d) { return x(d.time) })
                 .y(function(d) { return y(d[yName]) })
                 )
 
@@ -129,16 +131,16 @@ class TimeLineChart extends Component {
                 .attr("stroke", color(keys[1]))
                 .attr("stroke-width", 1.5)
                 .attr("d", d3.line()
-                .x(function(d) { return x(d.Date) })
+                .x(function(d) { return x(d.time) })
                 .y(function(d) { return y(d[yName]) })
                 )
          }
          }
 
-         if(this.props.yAxises)
+         if(this.props.yAxes)
          {
 
-            var keys = this.props.yAxises;
+            var keys = this.props.yAxes;
             // Usually you have a color scale in your chart already
             color = d3.scaleOrdinal()
             .domain(keys)
@@ -147,7 +149,7 @@ class TimeLineChart extends Component {
             legend = true;
 
             var i =0;
-            this.props.yAxises.forEach(
+            this.props.yAxes.forEach(
                function(element) {
                   svg.append("path")
                   .datum(data)
@@ -156,7 +158,7 @@ class TimeLineChart extends Component {
                   .attr("stroke-width", 1.5)
                   .attr("data-legend",function(d) { return d[element]})
                   .attr("d", d3.line()
-                     .x(function(d) { return x(d.Date) })
+                     .x(function(d) { return x(d.time) })
                      .y(function(d) { return y(d[element]) })
                      );;
                i++;
@@ -178,7 +180,7 @@ class TimeLineChart extends Component {
                            .attr("r", 7)
                            .style("fill", function(d){ return color(d)})
          
-                           // Add one dot in the legend for each name.
+                           // Add one label in the legend for each name.
                            svg.selectAll("mylabels")
                            .data(keys)
                            .enter()

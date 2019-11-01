@@ -81,7 +81,7 @@ this.props.onDatePickedChanged(this.state.startDate,date);
                 selectsEnd
                 endDate={endDate}
                 minDate={startDate}
-                maxDate={new Date("2009/12/31")}
+                maxDate={new Date("2019/10/11")}
               />
               </Col>
             </Row>
@@ -89,10 +89,25 @@ this.props.onDatePickedChanged(this.state.startDate,date);
               <Col >
             <Select 
               options={strategyOptions} 
-              defaultValue={{ label: "Select a strategy", value: 0 } }
+              defaultValue={strategyOptions[0]}
               onChange={e => {
                 this.props.onStrategyChanged(e.value);
                 ;}} />
+            {this.props.stockNames &&
+              this.props.stockNames[0] &&
+              <Select
+                options={
+                  this.props.stockNames
+                    .map(stock => ({ value: stock, label: stock }))
+                }
+                defaultValue={
+                  {
+                    value: this.props.stockNames[0],
+                    label: this.props.stockNames[0]
+                  }
+                }
+                onChange={async e => this.props.onStockChanged(e.value)}
+              />}
             </Col>
             </Row>
             <Row >

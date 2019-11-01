@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import { Container, Row, Col } from 'react-grid-system';
 import './App.css';
 import BarChartHistagram from './BarChartHistagram';
 import TimeLineChart from './Stocks/TimeLineChart';
@@ -8,43 +9,35 @@ import SingleNumber from './Helpers/SingleNumber';
 import DatePickerStock from './Helpers/DatePickerStock';
 import Select from 'react-select';
 
-const stocksOptions = 
-[
-  { value: 'stockdata', label: 'AAP' },
-  { value: 'dataSPY', label: 'SPY' },
-];
 class App extends Component {
 
  constructor()
  {
    super();
 
-   
-   let data3;
-   let data2;
-   let data4;
-   let data1;
    this.onDateChanged = this.onDateChanged.bind(this);
    this.onStrategyChanged = this.onStrategyChanged.bind(this);
    this.runSimulation = this.runSimulation.bind(this);
 
 
-   this.state = { data : [["",10], ["",20], ["",30]], 
-   dataSPY : [], 
-   stockdata1: [], 
-   stockdata: [],
-   stockdata4: [],
-   stocksData: [[]], 
+   this.state = {
    histArray: [], 
-   test:0, 
-
    startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
    endDate:d3.timeParse("%m/%d/%Y")("11/31/2009"),
    strategy:'strategy1',
-   stockToDisplay: this['data1']
+      stockNames: [],
+      dataStock: {},
+      dataSPY: {}, 
+      accountStart: 100000,
+      percentageGain: 0,
+      percentageGainYearly: 0,
+      percentageGainSPY: 0,
+      standardDeviation: 0,
+      maxDrawdown: 0,
+      sharpeRatio: 0
+    };
+    this.state.accountEnd = this.state.accountStart;
   }
-
- }
 
 
 //  onStartSimulation()
@@ -66,318 +59,226 @@ onStrategyChanged(newStrategy)
     endDate: newEndDate
   });
  }
-  isdateValid(date)
-  {
-    if ((date< this.state.startDate ) ||(date> this.state.endDate ) )
-    return false;
 
-    return true;
+  toArray(object) {
+    return Object.entries(object).map(([k, v]) => v);
+  }
+
+  average(data) {
+    return data.reduce((acc, val) => acc + val, 0) / data.length;
+  }
+
+  movingAverage(data, n, i, map) {
+    return this.average(data.slice(i - Math.min(i, n - 1), i + 1).map(d => map(d)));
+  }
+
+  async query(str) {
+    return (await d3.json('query.php', {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json'},
+      body: JSON.stringify({ query: str })
+    })).result;
+  }
+
+  async fetchNames() {
+    return (await this.query('SELECT stock FROM stocks GROUP BY stock'))
+      .map(d => d.stock);
+  }
+
+  async fetchStock(stock) {
+    let data = {};
+    (await this.query(`
+      SELECT * from stocks
+      WHERE stock='${stock}'
+      AND date BETWEEN '${d3.timeFormat('%Y-%m-%d')(this.state.startDate)}'
+      AND '${d3.timeFormat('%Y-%m-%d')(this.state.endDate)}'`
+    ))
+      .forEach((d, i, a) => {
+        d.time = d3.timeParse('%Y-%m-%d')(d.date);
+        d.price = +d.adjusted_close;
+        d.volume = +d.volume;
+        d.MA5 = this.movingAverage(a, 5, i, d => d.price);
+        d.MA10 = this.movingAverage(a, 10, i, d => d.price);
+        d.MA20 = this.movingAverage(a, 20, i, d => d.price);
+        d.MA30 = this.movingAverage(a, 30, i, d => d.price);
+        data[d.date] = d
+      });
+    return data;
+  }
+
+  async fetchSPY() {
+    let data = await this.fetchStock('SPY');
+    const arr = this.toArray(data);
+    const ratio = this.state.accountStart / arr[0].price;
+    arr.forEach(d => data[d.date].account = d.price * ratio );
+    return data;
   }
 
   async componentDidMount() {
-
-  //load data
-  this.data4  = await csv('./AAP.csv');
-  this.data3  = await csv('./AAP.csv'); // single selection algorithm
-  this.data2  = await csv('./SPY.csv'); // get SPY stock
-  this.data1  = await csv('./AAP.csv'); // get one stock date, price,volumn
-  // importnat when adding  a new stock please add it to this too: stocksOptions
-
-
-  this.runSimulation();
-
- 
+    const stockNames = await this.fetchNames();
+    this.setState({
+      stockNames: stockNames,
+      stockSelection: stockNames[0]
+    });
   }
 
-  runSimulation()
+  async selectStock() {
+    this.setState({
+      dataStock: await this.fetchStock(this.state.stockSelection),
+      dataSPY: await this.fetchSPY()
+    });
+  }
+
+  strategy1() {
+    // investment strategy1 based on ma5 and ma30
+    let out = {};
+    this.toArray(this.state.dataStock)
+      .map((d, i, a) => {
+        const prev = a[i - 1];
+        const prev2 = a[i - 2];
+        d.MA5BuyFlag =
+          i >= 30
+            && d.price < prev.price
+            && prev.price < prev2.price
+            && d.MA10 > d.MA5;
+        d.MA5SellFlag =
+          i >= 30
+            && d.price > prev.price
+            && prev.price > prev2.price
+            && d.MA10 < d.MA5;
+        d.cash = i > 0 ? prev.cash : this.state.accountStart;
+        d.shares = i > 0 ? prev.shares : 0;
+        if (d.MA5BuyFlag && d.cash > d.price) {
+          const shares = Math.floor(d.cash / d.price);
+          d.cash -= shares * d.price;
+          d.shares += shares;
+        }
+        if (d.MA5SellFlag && d.shares > 0) {
+          d.cash += d.shares * d.price;
+          d.shares = 0;
+        }
+        d.account = d.cash + d.shares * d.price;
+        d.priceSPY =
+          this.state.dataSPY[d.date] ? this.state.dataSPY[d.date].price : 0;
+        return d;
+      })
+      .forEach(d => out[d.date] = d);
+    return out;
+  }
+
+  strategy2() {
+    // investment strategy1 based on ma5 and ma30
+    let out = {};
+    this.toArray(this.state.dataStock)
+      .map((d, i, a) => {
+        const prev = a[i - 1];
+        const prev2 = a[i - 2];
+        d.MA5BuyFlag =
+          i >= 30
+            && d.price < prev.price
+            && prev.price < prev2.price
+            && d.MA10 > d.MA5
+            && d.volume < prev.volume;
+        d.MA5SellFlag =
+          i >= 30
+            && d.price > prev.price
+            && prev.price > prev2.price
+            && d.MA10 < d.MA5
+            && d.volume > prev.volume;
+        d.cash = i > 0 ? prev.cash : this.state.accountStart;
+        d.shares = i > 0 ? prev.shares : 0;
+        if (d.MA5BuyFlag && d.cash > d.price) {
+          const shares = Math.floor(d.cash / d.price);
+          d.cash -= shares * d.price;
+          d.shares += shares;
+        }
+        if (d.MA5SellFlag && d.shares > 0) {
+          d.cash += d.shares * d.price;
+          d.shares = 0;
+        }
+        d.account = d.cash + d.shares * d.price;
+        d.priceSPY =
+          this.state.dataSPY[d.date] ? this.state.dataSPY[d.date].price : 0;
+        return d;
+      })
+      .forEach(d => out[d.date] = d);
+    return out;
+  }
+
+  async runSimulation()
   {
-    if ( this.state.strategy== 'strategy1')
-    {
-      let  stockdata1 = [];
-      let  dataSPY = [];
-      let  stockdata = [];
-      let  stockdata4 = [];
-      var  ma=[];
-      let  _accountStart=100000;
-      let  _cash=100000;
-      let  _share=0;
-      let  _accountEnd=_accountStart;
-      var  accountArray=[];
-      var  dateArray=[];
-      var  histArray=[];
-      let  prevPrice=0;
-      var  accountSum=0;
-      var  SPYprice=[];
-      var  vol=[];
+    await this.selectStock();
 
-      let numberOfSPYs = 0 ;
-      // SPY date,price,volume
-      this.data2.forEach(d => 
-        {
-          var singleData = 
-          {
-            Price:'0'
-            
-          };
-          singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
-    
-          singleData.Price = +d["Adjusted_close"];
-    
-          if (this.isdateValid(singleData.Date) && singleData.Price>0 )
-          {
-            if (numberOfSPYs == 0)
-            {
-              let originalSPYPrice = singleData.Price;
-              numberOfSPYs = _accountStart / originalSPYPrice;
-            }
-            singleData.account =  numberOfSPYs * singleData.Price;
-            dataSPY.push(singleData);
-            SPYprice.push(singleData.Price);
-          }
-    
+    const strategies = {
+      'strategy1': this.strategy1.bind(this),
+      'strategy2': this.strategy2.bind(this)
+    };
+
+    const dataAccount = strategies[this.state.strategy]();
+
+    const histArray =
+      this.toArray(dataAccount)
+        .map((d, i, a) => {
+          const prev = a[i - 1];
+          return prev ? (d.price - prev.price) / prev.price : 0;
         });
 
-        this.setState({ dataSPY: dataSPY })
-    
-      // investment strategy1 based on ma5 and ma30
-      this.data3.forEach(d => 
-        {
-          var singleData = 
-          {
-            Date: '0',
-            DateStr: '0',
-            Price:'0',
-            Volume:'0',
-            MA5:'0',
-            MA10:'0',
-            MA20:'0',
-            MA30:'0',        
-            MA5BuyFlag:false,
-            MA5SellFlag:false,
-            accountStart:_accountStart,
-            account:_accountStart,
-            cash:_cash,
-            share:_share,
-            hist:'0',
-            accountEnd:_accountStart,
-          };
-          
-          singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
-          singleData.DateStr=d["Date"];
-          singleData.Price = +d["Adjusted_close"];
-          singleData.Volume = +d["Volume"];         
-          
-          if(this.isdateValid(singleData.Date.getTime()))
-          {
+    const standardDeviation = values => {
+      var avg = this.average(values.map(d => d.account));
+      return Math.sqrt(this.average(
+        values.map(value => {
+          var diff = value.account - avg;
+          return diff * diff;
+        })
+      )) / this.state.accountStart * 100;
+    };
 
-          ma.push(singleData.Price);
-          vol.push(singleData.Volume);
-    
-          singleData.MA5=ma.reduce(function(sum, d, i) {        
-            if(ma.length<5) return 0.0;  
-            var j=ma.length-5;
-            if(i>=j)     
-            { 
-              return sum+d;   
-            }     
-            return 0;
-          }, 0);
-          singleData.MA5=singleData.MA5/5.0;
-    
-          singleData.MA10=ma.reduce(function(sum, d, i) {        
-            if(ma.length<10) return 0.0;  
-            var j=ma.length-10;
-            if(i>=j)     
-            { 
-              return sum+d;   
-            }     
-            return 0;
-          }, 0);
-          singleData.MA10=singleData.MA10/10.0;
-    
-          singleData.MA20=ma.reduce(function(sum, d, i) {        
-            if(ma.length<20) return 0.0;  
-            var j=ma.length-20;
-            if(i>=j)     
-            { 
-              return sum+d;   
-            }     
-            return 0;
-          }, 0);
-          singleData.MA20=singleData.MA20/20.0;
-    
-          singleData.MA30=ma.reduce(function(sum, d, i) {        
-            if(ma.length<30) return 0.0;  
-            var j=ma.length-30;
-            if(i>=j)     
-            { 
-              return sum+d;   
-            }     
-            return 0;
-          }, 0);
-          singleData.MA30=singleData.MA30/30.0;
-    
-          
-          singleData.MA5BuyFlag=ma.reduce(function(flag,d,i) {
-            if(i>=30 && ma[i]<ma[i-1] && ma[i-1]<ma[i-2]
-              && singleData.MA10>singleData.MA5 
-              //&& vol[i]<vol[i-1]
-              )
-              flag=true;
-            else
-              flag=false;
-            return flag;
-          },false);
-    
-          singleData.MA5SellFlag=ma.reduce(function(flag,d,i) {
-            if(i>=30 && ma[i]>ma[i-1] && ma[i-1]>ma[i-2]
-              && singleData.MA10<singleData.MA5 
-              //&& vol[i]>vol[i-1]
-              )
-              flag=true;
-            else
-              flag=false;
-            return flag;
-          },false);
-    
-          if(singleData.MA5BuyFlag && singleData.cash>singleData.Price)
-          {
-            var share=Math.floor(singleData.cash/singleData.Price);
-            singleData.cash=singleData.cash-share*singleData.Price;
-            singleData.share=singleData.share+share;
-            _share=singleData.share;         
-            _cash=singleData.cash;
-            //console.log("buy stocks Date: ",singleData.Date," Cash=",_cash," Share=",_share);           
-          }
-    
-          if(singleData.MA5SellFlag && singleData.share>0)
-          {        
-            singleData.cash=singleData.cash+singleData.share*singleData.Price;
-            _cash=singleData.cash;
-            singleData.share=0;
-            _share=singleData.share;
-          // console.log("sell stocks Date: ",singleData.Date," Cash=",_cash," Share=",_share);
-          }
-          singleData.cash=_cash;
-          singleData.share=_share;
-          singleData.account=singleData.cash+singleData.share*singleData.Price;
-          accountArray.push(singleData.account);
-          console.log(singleData.Date, " ",singleData.account);
-          dateArray.push(singleData.Date);
-          _accountEnd=singleData.account;
-          accountSum+=singleData.account;
-    
-          singleData.hist= accountArray.reduce(function(diff, d, i) {        
-            if(accountArray.length<2) return 0.0;  
-            var j=accountArray.length-1;
-            if(i===j-1)     
-            { 
-              prevPrice=d;   
-            }     
-            else if(i===j)
-            {
-              diff=(d-prevPrice)/prevPrice;
-            }
-            return diff;
-          }, 0);
-    
-    
-    
-          if (this.isdateValid(singleData.Date) && singleData.Price>0)
-          {
-            histArray.push(singleData.hist);
-            stockdata.push(singleData);
-            singleData.account=singleData.cash+singleData.share*singleData.Price;
-          }
-        }       
-    
-        });
+    const drawDown = values => {
+      var max = values.reduce(
+        (acc, d, i) =>
+          i > acc.index && d.account > acc.account
+            ? { account: d.account, index: i }
+            : acc,
+        { account: 0, index: 0 }
+      );
+      var min = values.reduce(
+        (acc, d, i) =>
+          i > max.index
+            ? d.account < acc.account
+              ? { account: d.account, index: i }
+              : acc
+            : max,
+        { account: 0, index: 0 }
+      );
+      return (max.account - min.account) / max.account * 100;
+    }
 
-        function standardDeviation(values){
-          var avg = average(values);
-          
-          var squareDiffs = values.map(function(value){
-            var diff = value - avg;
-            var sqrDiff = diff * diff;
-            return sqrDiff;
-          });
-          
-          var avgSquareDiff = average(squareDiffs);
-        
-          var stdDev = Math.sqrt(avgSquareDiff)/_accountStart*100;
-          return stdDev;
-        }
-        
-        function average(data){
-          var sum = data.reduce(function(sum, value){
-            return sum + value;
-          }, 0);
-        
-          var avg = sum / data.length;
-          return avg;
-        }    
-    
-      
-        function drawDown(values)
-        {
-          var accountMaxIndex=0;
-          var accountMax=values.reduce(function(accountMax,d,i)
-          {
-            if(accountMax<d)
-              {
-                accountMaxIndex=i;
-                return d;
-              }
-            else
-            {
-              return accountMax;
-            }
-          },0);
-        
-          var accountMin=values.reduce(function(accountMin,d,i)
-          {
-            if(i>accountMaxIndex )
-              {
-                if(accountMin>d)
-                  return d;
-                else
-                  return accountMin;
-              }
-            else
-              return accountMax;
-          },accountMax);
-    
-          var maxdrawDown= (accountMax-accountMin)/accountMax*100;
-          return maxdrawDown.toFixed(1);
-          //return accountMin;
-        }
-    
         function yearlyGain(values)
         {
           
           var firstDayAccount=values[0];
           var lastDayAccount=values[0];
-          var firstYear= dateArray[0].getFullYear();
-          var lastYear=dateArray[dateArray.length-1].getFullYear();
+          var firstYear = values[0].time.getFullYear();
+          var lastYear = values[values.length - 1].time.getFullYear();
           var gain=[];
           if(firstYear==lastYear)
           {
-            return (accountArray[accountArray.length-1]-accountArray[0])/accountArray[0]*100;
+            return (values[values.length - 1].account - values[0].account) / values[0].account * 100;
           } 
           else
           {
             for(var i=0;i<values.length;i++)
             {
               
-              if(i+1<values.length && dateArray[i].getFullYear()==firstYear+1)
+              if(i+1<values.length && values[i].time.getFullYear()==firstYear+1)
               {
-                lastDayAccount=accountArray[i];
+                lastDayAccount = values[i].account;
                 var yealygain=(lastDayAccount-firstDayAccount)/firstDayAccount*100;
                 gain.push(yealygain);
                 firstYear=firstYear+1;
                 if(firstYear==lastYear)
                 {
-                  var lastgain=(accountArray[accountArray.length-1]-accountArray[i+1])/accountArray[i+1]*100;
+                  var lastgain = (values[values.length - 1].account - values[i + 1].account) / values[i + 1].account * 100;
                   gain.push(lastgain);
                   break;
                 }
@@ -390,410 +291,108 @@ onStrategyChanged(newStrategy)
           
           return gainSum/gain.length;
         }
-    
+
+    const accountArray = this.toArray(dataAccount);
+
         function sharpeRatio()
         {
             var yearlygain=yearlyGain(accountArray);
-            var yearlySd=standardDeviation(accountArray).toFixed(1);
-            return ((yearlygain-0.035)/yearlySd).toFixed(1);
+            var yearlySd=standardDeviation(accountArray);
+            return ((yearlygain-0.035)/yearlySd);
         }  
         
         // Update all the information to be displayed data3
-        this.setState({
-          stockdata: stockdata,
-          histArray: histArray,
-          startingMoney : _accountStart.toFixed(2),
-          endingMoney : _accountEnd.toFixed(2),
-          percentangeGain : ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1),
-          averagePercentagegain : yearlyGain(accountArray).toFixed(1),
-          standardDeviation : standardDeviation(accountArray).toFixed(1),
-          percetangeGainOfSPY :((SPYprice[SPYprice.length-1]-SPYprice[0])/SPYprice[0]*100).toFixed(1),
-          MaxDrawdownPercentage :drawDown(accountArray),
-          sharpeRadio :sharpeRatio(),
-          stockToDisplay: this['data1']
-        })
-    }
-    else
-    {
-      let  stockdata1 = [];
-      let  dataSPY = [];
-      let  stockdata = [];
-      let  stockdata4 = [];
-      var  ma=[];
-      let  _accountStart=100000;
-      let  _cash=100000;
-      let  _share=0;
-      let  _accountEnd=_accountStart;
-      var  accountArray=[];
-      var  dateArray=[];
-      var  histArray=[];
-      let  prevPrice=0;
-      var  accountSum=0;
-      var  SPYprice=[];
-      var  vol=[];
-
-      let numberOfSPYs = 0 ;
-      // SPY date,price,volume
-      this.data2.forEach(d => 
-        {
-          var singleData = 
-          {
-            Price:'0'
-            
-          };
-          singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
-    
-          singleData.Price = +d["Adjusted_close"];
-    
-          if (this.isdateValid(singleData.Date) && singleData.Price>0 )
-          {
-            if (numberOfSPYs == 0)
-            {
-              let originalSPYPrice = singleData.Price;
-              numberOfSPYs = _accountStart / originalSPYPrice;
-            }
-            singleData.account =  numberOfSPYs * singleData.Price;
-            dataSPY.push(singleData);
-            SPYprice.push(singleData.Price);
-          }
-    
-        });
-
-        this.setState({ dataSPY: dataSPY })
-    
-      // investment strategy1 based on ma5 and ma30
-      this.data3.forEach(d => 
-        {
-          var singleData = 
-          {
-            Date: '0',
-            DateStr: '0',
-            Price:'0',
-            Volume:'0',
-            MA5:'0',
-            MA10:'0',
-            MA20:'0',
-            MA30:'0',        
-            MA5BuyFlag:false,
-            MA5SellFlag:false,
-            accountStart:_accountStart,
-            account:_accountStart,
-            cash:_cash,
-            share:_share,
-            hist:'0',
-            accountEnd:_accountStart,
-          };
-          
-          singleData.Date = d3.timeParse("%m/%d/%Y")(d["Date"]);
-          singleData.DateStr=d["Date"];
-          singleData.Price = +d["Adjusted_close"];
-          singleData.Volume = +d["Volume"];         
-          
-          if(this.isdateValid(singleData.Date.getTime()))
-          {
-
-          ma.push(singleData.Price);
-          vol.push(singleData.Volume);
-    
-          singleData.MA5=ma.reduce(function(sum, d, i) {        
-            if(ma.length<5) return 0.0;  
-            var j=ma.length-5;
-            if(i>=j)     
-            { 
-              return sum+d;   
-            }     
-            return 0;
-          }, 0);
-          singleData.MA5=singleData.MA5/5.0;
-    
-          singleData.MA10=ma.reduce(function(sum, d, i) {        
-            if(ma.length<10) return 0.0;  
-            var j=ma.length-10;
-            if(i>=j)     
-            { 
-              return sum+d;   
-            }     
-            return 0;
-          }, 0);
-          singleData.MA10=singleData.MA10/10.0;
-    
-          singleData.MA20=ma.reduce(function(sum, d, i) {        
-            if(ma.length<20) return 0.0;  
-            var j=ma.length-20;
-            if(i>=j)     
-            { 
-              return sum+d;   
-            }     
-            return 0;
-          }, 0);
-          singleData.MA20=singleData.MA20/20.0;
-    
-          singleData.MA30=ma.reduce(function(sum, d, i) {        
-            if(ma.length<30) return 0.0;  
-            var j=ma.length-30;
-            if(i>=j)     
-            { 
-              return sum+d;   
-            }     
-            return 0;
-          }, 0);
-          singleData.MA30=singleData.MA30/30.0;
-    
-          
-          singleData.MA5BuyFlag=ma.reduce(function(flag,d,i) {
-            if(i>=30 && ma[i]<ma[i-1] && ma[i-1]<ma[i-2]
-              && singleData.MA10>singleData.MA5 
-              && vol[i]<vol[i-1]
-              )
-              flag=true;
-            else
-              flag=false;
-            return flag;
-          },false);
-    
-          singleData.MA5SellFlag=ma.reduce(function(flag,d,i) {
-            if(i>=30 && ma[i]>ma[i-1] && ma[i-1]>ma[i-2]
-              && singleData.MA10<singleData.MA5 
-              && vol[i]>vol[i-1]
-              )
-              flag=true;
-            else
-              flag=false;
-            return flag;
-          },false);
-    
-          if(singleData.MA5BuyFlag && singleData.cash>singleData.Price)
-          {
-            var share=Math.floor(singleData.cash/singleData.Price);
-            singleData.cash=singleData.cash-share*singleData.Price;
-            singleData.share=singleData.share+share;
-            _share=singleData.share;         
-            _cash=singleData.cash;
-            //console.log("buy stocks Date: ",singleData.Date," Cash=",_cash," Share=",_share);           
-          }
-    
-          if(singleData.MA5SellFlag && singleData.share>0)
-          {        
-            singleData.cash=singleData.cash+singleData.share*singleData.Price;
-            _cash=singleData.cash;
-            singleData.share=0;
-            _share=singleData.share;
-          // console.log("sell stocks Date: ",singleData.Date," Cash=",_cash," Share=",_share);
-          }
-          singleData.cash=_cash;
-          singleData.share=_share;
-          singleData.account=singleData.cash+singleData.share*singleData.Price;
-          accountArray.push(singleData.account);
-          console.log(singleData.Date, " ",singleData.account);
-          dateArray.push(singleData.Date);
-          _accountEnd=singleData.account;
-          accountSum+=singleData.account;
-    
-          singleData.hist= accountArray.reduce(function(diff, d, i) {        
-            if(accountArray.length<2) return 0.0;  
-            var j=accountArray.length-1;
-            if(i===j-1)     
-            { 
-              prevPrice=d;   
-            }     
-            else if(i===j)
-            {
-              diff=(d-prevPrice)/prevPrice;
-            }
-            return diff;
-          }, 0);
-    
-    
-    
-          if (this.isdateValid(singleData.Date) && singleData.Price>0)
-          {
-            histArray.push(singleData.hist);
-            stockdata.push(singleData);
-            singleData.account=singleData.cash+singleData.share*singleData.Price;
-          }
-        }       
-    
-        });
-
-        function standardDeviation(values){
-          var avg = average(values);
-          
-          var squareDiffs = values.map(function(value){
-            var diff = value - avg;
-            var sqrDiff = diff * diff;
-            return sqrDiff;
-          });
-          
-          var avgSquareDiff = average(squareDiffs);
-        
-          var stdDev = Math.sqrt(avgSquareDiff)/_accountStart*100;
-          return stdDev;
-        }
-        
-        function average(data){
-          var sum = data.reduce(function(sum, value){
-            return sum + value;
-          }, 0);
-        
-          var avg = sum / data.length;
-          return avg;
-        }    
-    
-      
-        function drawDown(values)
-        {
-          var accountMaxIndex=0;
-          var accountMax=values.reduce(function(accountMax,d,i)
-          {
-            if(accountMax<d)
-              {
-                accountMaxIndex=i;
-                return d;
-              }
-            else
-            {
-              return accountMax;
-            }
-          },0);
-        
-          var accountMin=values.reduce(function(accountMin,d,i)
-          {
-            if(i>accountMaxIndex )
-              {
-                if(accountMin>d)
-                  return d;
-                else
-                  return accountMin;
-              }
-            else
-              return accountMax;
-          },accountMax);
-    
-          var maxdrawDown= (accountMax-accountMin)/accountMax*100;
-          return maxdrawDown.toFixed(1);
-          //return accountMin;
-        }
-    
-        function yearlyGain(values)
-        {
-          
-          var firstDayAccount=values[0];
-          var lastDayAccount=values[0];
-          var firstYear= dateArray[0].getFullYear();
-          var lastYear=dateArray[dateArray.length-1].getFullYear();
-          var gain=[];
-          if(firstYear==lastYear)
-          {
-            return (accountArray[accountArray.length-1]-accountArray[0])/accountArray[0]*100;
-          } 
-          else
-          {
-            for(var i=0;i<values.length;i++)
-            {
-              
-              if(i+1<values.length && dateArray[i].getFullYear()==firstYear+1)
-              {
-                lastDayAccount=accountArray[i];
-                var yealygain=(lastDayAccount-firstDayAccount)/firstDayAccount*100;
-                gain.push(yealygain);
-                firstYear=firstYear+1;
-                if(firstYear==lastYear)
-                {
-                  var lastgain=(accountArray[accountArray.length-1]-accountArray[i+1])/accountArray[i+1]*100;
-                  gain.push(lastgain);
-                  break;
-                }
-              }
-            }
-          }
-          var gainSum=0;
-          for(var i=0;i<gain.length;i++)
-            gainSum+=gain[i];
-          
-          return gainSum/gain.length;
-        }
-    
-        function sharpeRatio()
-        {
-            var yearlygain=yearlyGain(accountArray);
-            var yearlySd=standardDeviation(accountArray).toFixed(1);
-            return ((yearlygain-0.035)/yearlySd).toFixed(1);
-        }  
-        
-        // Update all the information to be displayed data3
-        this.setState({
-          stockdata: stockdata,
-          histArray: histArray,
-          startingMoney : _accountStart.toFixed(2),
-          endingMoney : _accountEnd.toFixed(2),
-          percentangeGain : ((_accountEnd-_accountStart)/_accountStart*100).toFixed(1),
-          averagePercentagegain : yearlyGain(accountArray).toFixed(1),
-          standardDeviation : standardDeviation(accountArray).toFixed(1),
-          percetangeGainOfSPY :((SPYprice[SPYprice.length-1]-SPYprice[0])/SPYprice[0]*100).toFixed(1),
-          MaxDrawdownPercentage :drawDown(accountArray),
-          sharpeRadio :sharpeRatio(),
-          stockToDisplay: this['data1']
-        })
-    }
+    const first = accountArray[0];
+    const last = accountArray[accountArray.length - 1];
+    const accountEnd = last.account;
+    console.log(dataAccount);
+    this.setState({
+      dataAccount: dataAccount,
+      accountEnd: accountEnd,
+      histArray: histArray,
+      percentageGain: (accountEnd - this.state.accountStart) / this.state.accountStart * 100,
+      percentageGainYearly: yearlyGain(accountArray),
+      percentageGainSPY: (last.priceSPY - first.priceSPY) / first.priceSPY * 100,
+      standardDeviation: standardDeviation(accountArray),
+      maxDrawdown: drawDown(accountArray),
+      sharpeRatio: sharpeRatio()
+    });
   }
-
-  
 
   render()
   {
-
-  return (
-    <div className='App'>
-      <div className='Root'>
-      <div>
-      <DatePickerStock onDatePickedChanged={this.onDateChanged} onStartSimulation={this.runSimulation} onStrategyChanged={this.onStrategyChanged} />
-      </div>
-      <div>
-      <SingleNumber header='Starting Money' value={'$'+ this.state.startingMoney}/>
-      <SingleNumber header='Ending Money' value={'$'+this.state.endingMoney}/>
-      <SingleNumber header='Percentage gain' value={this.state.percentangeGain +'%'}/>
-      <SingleNumber header='Avg yearly percetange gain' value={this.state.averagePercentagegain +'%'}/>
-      <SingleNumber header='Standard deviation' value={this.state.standardDeviation+'%'}/>
-      <SingleNumber header='Percentage gain of SPY ' value={this.state.percetangeGainOfSPY +'%'}/>
-      <SingleNumber header='Max drawdown percentage' value={this.state.MaxDrawdownPercentage +'%'}/>
-      <SingleNumber header='Sharpe Ratio' value={this.state.sharpeRadio}/>
-      </div>
-    </div>
-    <div id="divLineChart"  className='Chart'>
-        <div className='App-header'>
-          <h4>Histagram of daily gains/losses</h4>
+    return (
+      <div className='App'>
+        <Container fluid>
+          <Row justify='center'>
+            <Col xs="content">
+              <DatePickerStock
+                stockNames={this.state.stockNames}
+                dataStock={this.state.dataStock}
+                onDatePickedChanged={this.onDateChanged}
+                onStartSimulation={this.runSimulation}
+                onStrategyChanged={this.onStrategyChanged}
+                onStockChanged={(stock) => this.setState({ stockSelection: stock })}
+              />
+            </Col>
+            <Col xs="content">
+              <Container fluid>
+                <Row justify='center'>
+                  <SingleNumber header='Start Value' value={`${this.state.accountStart.toFixed(2)}`}/>
+                  <SingleNumber header='End Value' value={`${this.state.accountEnd.toFixed(2)}`}/>
+                  <SingleNumber header='% Gain' value={`${this.state.percentageGain.toFixed(1)}%`}/>
+                  <SingleNumber header='% Gain Yearly Avg' value={`${this.state.percentageGainYearly.toFixed(1)}%`}/>
+                </Row>
+                <Row justify='center'>
+                  <SingleNumber header='Std Dev' value={`${this.state.standardDeviation.toFixed(1)}%`}/>
+                  <SingleNumber header='S&amp;P500 % Gain' value={`${this.state.percentageGainSPY.toFixed(1)}%`}/>
+                  <SingleNumber header='Max Drawdown %' value={`${this.state.maxDrawdown.toFixed(1)}%`}/>
+                  <SingleNumber header='Sharpe Ratio' value={`${this.state.sharpeRatio.toFixed(1)}`}/>
+                </Row>
+              </Container>
+            </Col>
+          </Row>
+        </Container>
+        <div id="divLineChart"  className='Chart'>
+          <div className='App-header'>
+            <h4>Daily Gain/Loss Histogram</h4>
+          </div>
+          <BarChartHistagram data={this.state.histArray} size={[800,500]}/>
         </div>
-            {<BarChartHistagram data= {this.state.histArray} size={[800,500]}/>}
-      </div>
-
-      <div className='Chart'>
-        <div className='App-header'>
-          <h4>Stock Account of AAP</h4>
+        <div className='Chart'>
+          <div className='App-header'>
+            <h4>Account Value</h4>
+          </div>
+          <TimeLineChart
+            data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
+            data2={this.state.dataSPY && this.toArray(this.state.dataSPY)}
+            size={[800,500]}
+            yAxis='account'
+            lineNames={['Account value', 'S&P500 value']}
+          />
         </div>
-            {<TimeLineChart data= {this.state.stockdata} data2= {this.state.dataSPY} size={[800,500]} yAxis={"account"} lineNames={["Cash account", "Cash if invested on Spy"]}/>}
-      </div>
-      <div className='Chart'>
-        <div className='App-header'>
-          <h4>Stock Price Overtime</h4>
+        <div className='Chart'>
+          <div className='App-header'>
+            <h4>Historical Stock Price</h4>
+          </div>
+          <TimeLineChart
+            data={this.state.dataStock && this.toArray(this.state.dataStock)}
+            size={[800,500]}
+            yAxis='price'
+          />
         </div>
-        <Select 
-              options={stocksOptions} 
-              defaultValue={{ label: "Select a stock to display", value: 0 } }
-              onChange={e => {
-                this.setState({
-                  stockToDisplay: this.state[e.value]
-                  });
-                ;}} />
-            {<TimeLineChart data= {this.state.stockToDisplay} size={[800,460]} yAxis={"Price"} />}
-      </div>
-      <div className='Chart'>
-        <div className='App-header'>
-          <h4>MAs</h4>
+        <div className='Chart'>
+          <div className='App-header'>
+            <h4>Moving Averages</h4>
+          </div>
+          <TimeLineChart
+            data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
+            size={[800,500]}
+            yAxes={['MA5', 'MA10', 'MA20', 'MA30']}
+          />
         </div>
-            {<TimeLineChart data= {this.state.stockdata} size={[800,500]} yAxises={["MA5","MA10", "MA20", "MA30"]}/>}
       </div>
-    </div>
-  );
+    );
   }
 }
 
