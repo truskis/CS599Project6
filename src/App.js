@@ -73,11 +73,16 @@ onStrategyChanged(newStrategy)
   }
 
   async query(str) {
-    return (await d3.json('query.php', {
+    const response = await d3.json('query.php', {
       method: 'post',
       headers: { 'Content-Type': 'application/json'},
       body: JSON.stringify({ query: str })
-    })).result;
+    })
+    if (response.status != 'success')
+    {
+      throw response.result;
+    }
+    return response.result;
   }
 
   async fetchNames() {

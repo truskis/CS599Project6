@@ -20,23 +20,25 @@ module.exports = function(app) {
           return;
         }
 
-        // WARNING: Not for production use! The following statement
-        // is not protected against SQL injections.
-        const r = db.exec(req.body.query);
-
-        if (r[0]) {
+        try {
+          // WARNING: Not for production use! The following statement
+          // is not protected against SQL injections.
+          const statement = db.prepare(req.body.query);
+          let result = [];
+          while (statement.step())
+          {
+            result.push(statement.getAsObject());
+          }
+          statement.free();
           res.json({
             status: 'success',
-            result: r[0].values.map(d => {
-              let obj = {};
-              r[0].columns.forEach((c, i) => obj[c] = d[i]);
-              return obj;
-            })
+            result: result
           });
-        } else {
+        }
+        catch (e) {
           res.json({
             status: 'error',
-            result: `Query failed: ${req.body.query}`
+            result: `Query "${req.body.query}" failed: ${e}`
           });
         }
       });
