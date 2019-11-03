@@ -68,8 +68,20 @@ onStrategyChanged(newStrategy)
     return data.reduce((acc, val) => acc + val, 0) / data.length;
   }
 
+  standardDeviation(data) {
+    const avg = this.average(data);
+    return Math.sqrt(data.reduce((acc, val) => {
+      const diff = val - avg;
+      return acc + diff * diff
+    }) / (data.length - 1));
+  };
+
+  sliceRecent(data, n, i, map) {
+    return data.slice(i - Math.min(i, n - 1), i + 1).map(d => map(d));
+  }
+
   movingAverage(data, n, i, map) {
-    return this.average(data.slice(i - Math.min(i, n - 1), i + 1).map(d => map(d)));
+    return this.average(this.sliceRecent(data, n, i, map));
   }
 
   async query(str) {
@@ -220,93 +232,51 @@ onStrategyChanged(newStrategy)
     };
 
     const dataAccount = strategies[this.state.strategy]();
+    const accountArray = this.toArray(dataAccount);
+    const accountValue = accountArray.map(d => d.account);
 
-    const histArray =
-      this.toArray(dataAccount)
+    const maxDrawDown = (() => {
+      const result = accountValue.reduce(
+        (acc, d, i) => {
+          if (d < acc.minValue) {
+            acc.minValue = d;
+            acc.drawdown = (acc.peakValue - d) / acc.peakValue * 100.0;
+            acc.drawdownFrom = acc.peakIndex;
+            acc.drawdownTo = i;
+          }
+          else if (d > acc.maxValue) {
+            acc.maxValue = d;
+            acc.peakValue = d;
+            acc.peakIndex = i;
+          }
+          return acc;
+        },
+        {
+          minValue: accountValue[0],
+          maxValue: accountValue[0],
+          peakValue: accountValue[0],
+          peakIndex: 0,
+          drawdown: 0,
+          drawdownFrom: 0,
+          drawdownTo: 0
+        }
+      );
+      return result.drawdown;
+    })();
+
+    const dailyGains =
+      accountValue
         .map((d, i, a) => {
           const prev = a[i - 1];
-          return prev ? (d.price - prev.price) / prev.price : 0;
+          return prev ? (d - prev) / prev : 0;
         });
 
-    const standardDeviation = values => {
-      var avg = this.average(values.map(d => d.account));
-      return Math.sqrt(this.average(
-        values.map(value => {
-          var diff = value.account - avg;
-          return diff * diff;
-        })
-      )) / this.state.accountStart * 100;
-    };
+    const dailyAvg = this.average(dailyGains);
+    const dailyStdDev = this.standardDeviation(dailyGains);
+    const yearlyGain = Math.pow(dailyAvg + 1, 252) - 1;
+    const yearlyStdDev = dailyStdDev * Math.sqrt(252);
+    const sharpeRatio = (yearlyGain - 0.035) / yearlyStdDev;
 
-    const drawDown = values => {
-      var max = values.reduce(
-        (acc, d, i) =>
-          i > acc.index && d.account > acc.account
-            ? { account: d.account, index: i }
-            : acc,
-        { account: 0, index: 0 }
-      );
-      var min = values.reduce(
-        (acc, d, i) =>
-          i > max.index
-            ? d.account < acc.account
-              ? { account: d.account, index: i }
-              : acc
-            : max,
-        { account: 0, index: 0 }
-      );
-      return (max.account - min.account) / max.account * 100;
-    }
-
-        function yearlyGain(values)
-        {
-          
-          var firstDayAccount=values[0];
-          var lastDayAccount=values[0];
-          var firstYear = values[0].time.getFullYear();
-          var lastYear = values[values.length - 1].time.getFullYear();
-          var gain=[];
-          if(firstYear==lastYear)
-          {
-            return (values[values.length - 1].account - values[0].account) / values[0].account * 100;
-          } 
-          else
-          {
-            for(var i=0;i<values.length;i++)
-            {
-              
-              if(i+1<values.length && values[i].time.getFullYear()==firstYear+1)
-              {
-                lastDayAccount = values[i].account;
-                var yealygain=(lastDayAccount-firstDayAccount)/firstDayAccount*100;
-                gain.push(yealygain);
-                firstYear=firstYear+1;
-                if(firstYear==lastYear)
-                {
-                  var lastgain = (values[values.length - 1].account - values[i + 1].account) / values[i + 1].account * 100;
-                  gain.push(lastgain);
-                  break;
-                }
-              }
-            }
-          }
-          var gainSum=0;
-          for(var i=0;i<gain.length;i++)
-            gainSum+=gain[i];
-          
-          return gainSum/gain.length;
-        }
-
-    const accountArray = this.toArray(dataAccount);
-
-        function sharpeRatio()
-        {
-            var yearlygain=yearlyGain(accountArray);
-            var yearlySd=standardDeviation(accountArray);
-            return ((yearlygain-0.035)/yearlySd);
-        }  
-        
-        // Update all the information to be displayed data3
     const first = accountArray[0];
     const last = accountArray[accountArray.length - 1];
     const accountEnd = last.account;
@@ -314,13 +284,13 @@ onStrategyChanged(newStrategy)
     this.setState({
       dataAccount: dataAccount,
       accountEnd: accountEnd,
-      histArray: histArray,
+      histArray: dailyGains,
       percentageGain: (accountEnd - this.state.accountStart) / this.state.accountStart * 100,
-      percentageGainYearly: yearlyGain(accountArray),
+      percentageGainYearly: yearlyGain * 100,
       percentageGainSPY: (last.priceSPY - first.priceSPY) / first.priceSPY * 100,
-      standardDeviation: standardDeviation(accountArray),
-      maxDrawdown: drawDown(accountArray),
-      sharpeRatio: sharpeRatio()
+      standardDeviation: dailyStdDev * 100,
+      maxDrawdown: maxDrawDown,
+      sharpeRatio: sharpeRatio
     });
   }
 
