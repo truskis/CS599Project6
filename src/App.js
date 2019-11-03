@@ -3,8 +3,8 @@ import { Container, Row, Col } from 'react-grid-system';
 import './App.css';
 import BarChartHistagram from './BarChartHistagram';
 import TimeLineChart from './Stocks/TimeLineChart';
-import {csv} from 'd3';
 import * as d3 from "d3";
+import {group} from 'd3-array';
 import SingleNumber from './Helpers/SingleNumber';
 import DatePickerStock from './Helpers/DatePickerStock';
 import Select from 'react-select';
@@ -19,12 +19,15 @@ class App extends Component {
    this.onStrategyChanged = this.onStrategyChanged.bind(this);
    this.runSimulation = this.runSimulation.bind(this);
 
-   this.state = {
+   const stockNames = this.fetchNames();
+  this.state = {
    histArray: [], 
    startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
    endDate:d3.timeParse("%m/%d/%Y")("11/31/2009"),
    strategy:'strategy1',
-      stockNames: [],
+      stockNames: stockNames,
+      stockSimulate: stockNames[0],
+      stockSelection: [],
       dataStock: {},
       dataSPY: {}, 
       accountStart: 100000,
@@ -69,10 +72,10 @@ onStrategyChanged(newStrategy)
 
   standardDeviation(data) {
     const avg = this.average(data);
-    return Math.sqrt(data.reduce((acc, val) => {
+    return data.length > 1 ? Math.sqrt(data.reduce((acc, val) => {
       const diff = val - avg;
       return acc + diff * diff
-    }) / (data.length - 1));
+    }) / (data.length - 1)) : 0;
   };
 
   sliceRecent(data, n, i, map) {
@@ -101,56 +104,57 @@ onStrategyChanged(newStrategy)
       .map(d => d.stock);
   }
 
+  async postProcess(raw) {
+    let tmp = [];
+    group(raw, d => d.stock)
+      .forEach((prices, stock) => {
+        prices.forEach((d, i, a) => {
+          d.time = d3.timeParse('%Y-%m-%d')(d.date);
+          d.price = +d.adjusted_close;
+          d.volume = +d.volume;
+          d.MA5  = this.movingAverage(a,  5, i, d => d.price);
+          d.MA10 = this.movingAverage(a, 10, i, d => d.price);
+          d.MA20 = this.movingAverage(a, 20, i, d => d.price);
+          d.MA30 = this.movingAverage(a, 30, i, d => d.price);
+          tmp.push(d);
+        });
+      });
+    const data = tmp.sort((a, b) => {
+      if (a.date < b.date) return -1;
+      if (a.date > b.date) return 1;
+      return a.stock < b.stock ? -1 : 1;
+    });
+    this.setState({
+      data: group(data, d => d.date, d => d.stock),
+      dataByDate: group(data, d => d.date),
+      dataByStock: group(data, d => d.stock)
+    });
+  }
+
   async fetchStock(stock) {
-    let data = {};
-    (await this.query(`
+    this.postProcess(await this.query(`
       SELECT * from stocks
-      WHERE stock='${stock}'
+      WHERE (stock='${stock}' OR stock='SPY')
       AND date BETWEEN '${d3.timeFormat('%Y-%m-%d')(this.state.startDate)}'
       AND '${d3.timeFormat('%Y-%m-%d')(this.state.endDate)}'`
-    ))
-      .forEach((d, i, a) => {
-        d.time = d3.timeParse('%Y-%m-%d')(d.date);
-        d.price = +d.adjusted_close;
-        d.volume = +d.volume;
-        d.MA5 = this.movingAverage(a, 5, i, d => d.price);
-        d.MA10 = this.movingAverage(a, 10, i, d => d.price);
-        d.MA20 = this.movingAverage(a, 20, i, d => d.price);
-        d.MA30 = this.movingAverage(a, 30, i, d => d.price);
-        data[d.date] = d
-      });
-    return data;
+    ));
   }
 
-  async fetchSPY() {
-    let data = await this.fetchStock('SPY');
-    const arr = this.toArray(data);
-    const ratio = this.state.accountStart / arr[0].price;
-    arr.forEach(d => data[d.date].account = d.price * ratio );
-    return data;
+  async fetchStocks() {
+    this.postProcess(await this.query(`
+      SELECT * from stocks
+      WHERE date BETWEEN '${d3.timeFormat('%Y-%m-%d')(this.state.startDate)}'
+      AND '${d3.timeFormat('%Y-%m-%d')(this.state.endDate)}'`
+    ));
   }
 
-  async componentDidMount() {
-    const stockNames = await this.fetchNames();
-    this.setState({
-      stockNames: stockNames,
-      stockSelection: stockNames[0]
-    });
-  }
-
-  async selectStock() {
-    this.setState({
-      dataStock: await this.fetchStock(this.state.stockSelection),
-      dataSPY: await this.fetchSPY()
-    });
-  }
-
-  strategy1() {
+  async strategy1() {
     // investment strategy1 based on ma5 and ma30
-    const arr = this.toArray(this.state.dataStock);
-    const ratio = this.state.accountStart / this.state.dataSPY[arr[0].date].price;
+    await this.fetchStock(this.state.stockSimulate);
+    const ratio =
+      this.state.accountStart / this.state.dataByStock.get('SPY')[0].price;
     let out = {};
-    arr
+    this.toArray(this.state.dataByStock.get(this.state.stockSimulate) || {})
       .map((d, i, a) => {
         const prev = a[i - 1];
         const prev2 = a[i - 2];
@@ -165,33 +169,47 @@ onStrategyChanged(newStrategy)
             && prev.price > prev2.price
             && d.MA10 < d.MA5;
         d.cash = i > 0 ? prev.cash : this.state.accountStart;
-        d.shares = i > 0 ? prev.shares : 0;
+        let shares = i > 0 ? Object.assign({}, prev.shares) : { total: 0 };
         if (d.MA5BuyFlag && d.cash > d.price) {
-          const shares = Math.floor(d.cash / d.price);
-          d.cash -= shares * d.price;
-          d.shares += shares;
+          const buy = Math.floor(d.cash / d.price);
+          d.cash -= buy * d.price;
+          shares.total += buy;
+          shares[this.state.stockSimulate] =
+            shares[this.state.stockSimulate]
+              ? shares[this.state.stockSimulate] + buy
+              : buy;
         }
-        if (d.MA5SellFlag && d.shares > 0) {
-          d.cash += d.shares * d.price;
-          d.shares = 0;
+        if (d.MA5SellFlag && shares[this.state.stockSimulate] > 0) {
+          d.cash += shares[this.state.stockSimulate] * d.price;
+          shares.total -= shares[this.state.stockSimulate];
+          shares[this.state.stockSimulate] = 0;
         }
-        d.account = d.cash + d.shares * d.price;
+        d.shares = shares;
+        d.positions = d3.sum(Object.entries(d.shares)
+          .filter(([k, v]) => k != 'total')
+          .map(([k, v]) => v * this.state.data.get(d.date).get(k)[0].price));
+        d.account = d.cash + d.positions;
         d.accountSPY =
-          this.state.dataSPY[d.date]
-            ? ratio * this.state.dataSPY[d.date].price
+          this.state.data.get(d.date).get('SPY')[0].price
+            ? ratio * this.state.data.get(d.date).get('SPY')[0].price
             : 0;
         return d;
       })
       .forEach(d => out[d.date] = d);
+    this.setState({
+      stockSelection: [ this.state.stockSimulate ],
+      stockSelected: this.state.stockSimulate
+    });
     return out;
   }
 
-  strategy2() {
+  async strategy2() {
     // investment strategy1 based on ma5 and ma30
-    const arr = this.toArray(this.state.dataStock);
-    const ratio = this.state.accountStart / this.state.dataSPY[arr[0].date].price;
+    await this.fetchStock(this.state.stockSimulate);
+    const ratio =
+      this.state.accountStart / this.state.dataByStock.get('SPY')[0].price;
     let out = {};
-    arr
+    this.toArray(this.state.dataByStock.get(this.state.stockSimulate) || {})
       .map((d, i, a) => {
         const prev = a[i - 1];
         const prev2 = a[i - 2];
@@ -208,37 +226,48 @@ onStrategyChanged(newStrategy)
             && d.MA10 < d.MA5
             && d.volume > prev.volume;
         d.cash = i > 0 ? prev.cash : this.state.accountStart;
-        d.shares = i > 0 ? prev.shares : 0;
+        let shares = i > 0 ? Object.assign({}, prev.shares) : { total: 0 };
         if (d.MA5BuyFlag && d.cash > d.price) {
-          const shares = Math.floor(d.cash / d.price);
-          d.cash -= shares * d.price;
-          d.shares += shares;
+          const buy = Math.floor(d.cash / d.price);
+          d.cash -= buy * d.price;
+          shares.total += buy;
+          shares[this.state.stockSimulate] =
+            shares[this.state.stockSimulate]
+              ? shares[this.state.stockSimulate] + buy
+              : buy;
         }
-        if (d.MA5SellFlag && d.shares > 0) {
-          d.cash += d.shares * d.price;
-          d.shares = 0;
+        if (d.MA5SellFlag && shares[this.state.stockSimulate] > 0) {
+          d.cash += shares[this.state.stockSimulate] * d.price;
+          shares.total -= shares[this.state.stockSimulate];
+          shares[this.state.stockSimulate] = 0;
         }
-        d.account = d.cash + d.shares * d.price;
+        d.shares = shares;
+        d.positions = d3.sum(Object.entries(d.shares)
+          .filter(([k, v]) => k != 'total')
+          .map(([k, v]) => v * this.state.data.get(d.date).get(k)[0].price));
+        d.account = d.cash + d.positions;
         d.accountSPY =
-          this.state.dataSPY[d.date]
-            ? ratio * this.state.dataSPY[d.date].price
+          this.state.data.get(d.date).get('SPY')[0].price
+            ? ratio * this.state.data.get(d.date).get('SPY')[0].price
             : 0;
         return d;
       })
       .forEach(d => out[d.date] = d);
+    this.setState({
+      stockSelection: [ this.state.stockSimulate ],
+      stockSelected: this.state.stockSimulate
+    });
     return out;
   }
 
   async runSimulation()
   {
-    await this.selectStock();
-
     const strategies = {
       'strategy1': this.strategy1.bind(this),
       'strategy2': this.strategy2.bind(this)
     };
 
-    const dataAccount = strategies[this.state.strategy]();
+    const dataAccount = await strategies[this.state.strategy]();
     const accountArray = this.toArray(dataAccount);
     const accountValue = accountArray.map(d => d.account);
 
@@ -284,8 +313,11 @@ onStrategyChanged(newStrategy)
     const yearlyStdDev = dailyStdDev * Math.sqrt(252);
     const sharpeRatio = (yearlyGain - 0.035) / yearlyStdDev;
 
-    const first = accountArray[0];
-    const last = accountArray[accountArray.length - 1];
+    const first = accountArray[0] || { accountSPY: 1 };
+    const last = accountArray[accountArray.length - 1] || {
+      account: 0,
+      accountSPY: 0
+    };
     const accountEnd = last.account;
     console.log(dataAccount);
     this.setState({
@@ -303,6 +335,43 @@ onStrategyChanged(newStrategy)
 
   render()
   {
+    const selectStyle = {
+      control: (provided) => ({
+        ...provided,
+        fontSize: '0.8em',
+        minHeight: '1.6em',
+        borderRadius: '0.2em'
+      }),
+      valueContainer: (provided) => ({
+        ...provided,
+        padding: '0.1em 0.4em'
+      }),
+      menu: (provided) => ({
+        ...provided,
+        margin: '0.4em 0',
+        borderRadius: '0.2em'
+      }),
+      option: (provided) => ({
+        ...provided,
+        fontSize: '0.8em',
+        padding: '0.4em 0.6em',
+        color: 'black'
+      }),
+      dropdownIndicator: (provided) => ({
+        ...provided,
+        height: '1.6em',
+        padding: '0.4em'
+      }),
+      noOptionsMessage: (provided) => ({
+        ...provided,
+        fontSize: '0.8em',
+        padding: '0.4em 0.6em'
+      }),
+      container: (provided) => ({
+        ...provided,
+        width: '10vmin'
+      })
+    };
     return (
       <div className='App'>
         <div style={{
@@ -320,7 +389,7 @@ onStrategyChanged(newStrategy)
                 onDatePickedChanged={this.onDateChanged}
                 onStartSimulation={this.runSimulation}
                 onStrategyChanged={this.onStrategyChanged}
-                onStockChanged={(stock) => this.setState({ stockSelection: stock })}
+                onStockChanged={(stock) => this.setState({ stockSimulate: stock })}
               />
             </Row>
             <Row justify='center' className='header'>
@@ -370,25 +439,63 @@ onStrategyChanged(newStrategy)
             <Row style={{ height: 'calc(25vh - 3em)' }}>
               <TimeLineChart
                 data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
-                keys={['account', 'accountSPY']}
-                names={['Account value', 'S&P500 value']}
+                keys={['account', 'positions', 'accountSPY']}
+                names={['Account value', 'Positions', 'S&P500 value']}
                 format='$.0f'
               />
             </Row>
-            <Row className='header'>Shares Held</Row>
+            <Row className='header'>
+              <div style={{ alignItems: 'center' }}>
+                <div style={{ display: 'inline-flex' }}>
+                  <Select
+                    styles={selectStyle}
+                    options={this.state.stockSelection.map(stock => ({ value: stock, label: stock }))}
+                    value={{ value: this.state.stockSelected, label: this.state.stockSelected }}
+                    onChange={e => this.setState({ stockSelected: e.value })}
+                  />
+                </div>&nbsp;Shares Held
+              </div>
+            </Row>
             <Row style={{ height: 'calc(25vh - 3em)' }}>
               <TimeLineChart
-                data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
-                keys={['shares']}
-                names={['Shares held']}
+                data={this.state.dataAccount && this.toArray(this.state.dataAccount).map(d => Object.assign({ time: d.time }, d.shares))}
+                keys={[this.state.stockSelected]}
+                names={['Shares']}
                 format='.0f'
               />
             </Row>
-            <Row className='header'>Stock Price</Row>
+            <Row className='header'>
+              <div style={{ alignItems: 'center' }}>
+                <div style={{ display: 'inline-flex' }}>
+                  <Select
+                    styles={selectStyle}
+                    options={this.state.stockSelection.map(stock => ({ value: stock, label: stock }))}
+                    value={{ value: this.state.stockSelected, label: this.state.stockSelected }}
+                    onChange={e => this.setState({ stockSelected: e.value })}
+                  />
+                </div>&nbsp;Stock Price
+              </div>
+            </Row>
             <Row style={{ height: 'calc(50vh - 3em)' }}>
               <TimeLineChart
-                data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
-                keys={['price', 'MA5', 'MA10', 'MA20', 'MA30']}
+                data={
+                  this.state.dataByStock
+                    && this.state.stockSelected
+                    && this.state.dataByStock.get(this.state.stockSelected)}
+                keys={[
+                  'price',
+                  'MA5',
+                  'MA10',
+                  'MA20',
+                  'MA30'
+                ]}
+                names={[
+                  'Stock price',
+                  '5-day SMA',
+                  '10-day SMA',
+                  '20-day SMA',
+                  '30-day SMA'
+                ]}
                 format='$.0f'
                 toggle='true'
               />

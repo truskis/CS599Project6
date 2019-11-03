@@ -55,7 +55,7 @@ class TimeLineChart extends Component {
             .style("font-size", 14)
             .style("fill", "#045a5a");
 
-         var yMax = d3.max(data.map(d => keys.map(k => d[k]).reduce((acc, v) => Math.max(acc, v))));
+         var yMax = d3.max(data.map(d => keys.map(k => d[k]).reduce((acc, v) => Math.max(acc, v || 0))));
 
          // Add Y axis
          var y = d3.scaleLinear()
@@ -82,10 +82,10 @@ class TimeLineChart extends Component {
                   .attr("fill", "none")
                   .attr("stroke", color(element))
                   .attr("stroke-width", 1.5)
-                  .attr("data-legend",function(d) { return d[element]})
+                  .attr("data-legend",function(d) { return d[element] || 0})
                   .attr("d", d3.line()
                      .x(function(d) { return x(d.time) })
-                     .y(function(d) { return y(d[element]) })
+                     .y(function(d) { return y(d[element] || 0) })
                      );;
                });
 

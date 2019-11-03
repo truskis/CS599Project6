@@ -2,12 +2,12 @@ import DatePicker from 'react-datepicker'
 import './../App.css';
 import React, { Component } from 'react'
 import "react-datepicker/dist/react-datepicker.css";
-import { Container, Row, Col } from 'react-grid-system';
 import Select from 'react-select';
+import AsyncSelect from 'react-select/async';
 
 const strategyOptions = [
-  { value: 'strategy1', label: 'strategy1' },
-  { value: 'strategy2', label: 'strategy2' },
+  { value: 'strategy1', label: 'Single stock 5d vs 10d SMA' },
+  { value: 'strategy2', label: 'Single stock 5d vs 10d SMA & volume' },
   // { value: 'strategy3', label: 'strategy3' },
   // { value: 'strategy4', label: 'strategy4' }
 ];
@@ -116,22 +116,15 @@ this.props.onDatePickedChanged(this.state.startDate,date);
               this.props.onStrategyChanged(e.value);
             }}
           />
-          {this.props.stockNames &&
-            this.props.stockNames[0] &&
-            <Select
-              styles={selectStyle}
-              options={
-                this.props.stockNames
-                  .map(stock => ({ value: stock, label: stock }))
-              }
-              defaultValue={
-                {
-                  value: this.props.stockNames[0],
-                  label: this.props.stockNames[0]
-                }
-              }
-              onChange={async e => this.props.onStockChanged(e.value)}
-            />}
+          <AsyncSelect
+            styles={selectStyle}
+            defaultOptions
+            loadOptions={() => new Promise(
+              async resolve => resolve((await this.props.stockNames)
+                .map(stock => ({ value: stock, label: stock })))
+            )}
+            onChange={e => this.props.onStockChanged(e.value)}
+          />
           <button className='button' onClick={this.props.onStartSimulation}>Start Simulation</button>
         </div>
       </div>
