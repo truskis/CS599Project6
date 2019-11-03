@@ -3,17 +3,20 @@ import React, { Component } from 'react'
 import { Container, Row, Col } from 'react-grid-system';
 
 class SingleNumber extends Component {
-    render() {
-        return <div className="App-singleNumber">
-                <Container>
-                <Row className='App-numberHeader'>
-                    <Col> {this.props.header}</Col>
-                </Row>
-                <Row className= {this.props.value < 0 ? 'App-numberValueNeg' :'App-numberValuePos' }>
-                    <Col id="value"> {this.props.value}</Col>
-                </Row>
-                </Container>
-            </div>
-     }
+  render() {
+    return <div className='singleNumber'>
+      <div className='header'>{this.props.header}</div>
+      <div
+        className={
+          this.props.value < 0
+            ? 'numberValue negative'
+            : 'numberValue positive'
+        }
+      >
+        {this.props.value}
+      </div>
+    </div>
   }
-  export default SingleNumber
+}
+
+export default SingleNumber

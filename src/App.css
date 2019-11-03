@@ -1,68 +1,61 @@
 .App {
+  width: 100vw;
+  height: 100vh;
   text-align: center;
+  font-size: 1.8vmin;
+  overflow: hidden;
 }
 
-.App-header {
+.header {
   background-color: #282c34;
-  height: 60px;
+  padding: 0.5em 0px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
   color: white;
 }
 
-.App-numberValueNeg {
-display:inline-block;
-height: 60px;
-align-items: center;
-justify-content: center;
-background-color: #cf8585;
-}
-
-.App-numberValuePos {
+.numberValue {
   display:inline-block;
-  height: 60px;
+  padding: 0.5em 0px;
   align-items: center;
   justify-content: center;
+}
+
+.negative {
+  background-color: #cf8585;
+}
+
+.positive {
   background-color: #85cfa1;
-  }
-
-.App-numberHeader {
-  background-color: #282c34;
-  height: 45px;
-  padding: 10px 0px 0px 0px;
-  vertical-align: center;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: white;
-  }
-
-.App-singleNumber {
-  margin: 10px;
-  padding: 10px;
-  font-size: 40px;
-  display:inline-block;
 }
 
-.App-link {
+.singleNumber {
+  margin: 0.5vmin 0;
+  width: calc(50% - 0.5vmin);
+  display: block;
+}
+
+.singleNumber > div {
+  width: 100%;
+}
+
+.link {
   color: #09d3ac;
 }
-
 
 .Root {
   display:flex;
    flex-direction:row;
 }
-.Chart
-{
-  margin: 10px;
-  align-content: center;
-  font-size: calc(0.8em);
+
+.chart {
+  padding: 10px 0px;
+  font-size: 0.8em;
   fill:rgb(100, 100, 100);
-  display:inline-block;
+  width: 100%;
+  display: inline-block;
 }
 
 .button {
@@ -70,12 +63,12 @@ background-color: #cf8585;
   border: none;
   width: auto;
   color: white;
-  padding: 12px 20px;
-  margin: 12px;
+  padding: 0.8em 1em;
+  margin: 1em;
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 16px;
+  font-size: 0.8em;
   -webkit-transition-duration: 0.4s; /* Safari */
   transition-duration: 0.4s;
 }
@@ -87,12 +80,39 @@ background-color: #cf8585;
 
 .datePicker
 {
-  font-size: 16px;
-  width: 100px;
-  margin: 12px 0px 12px 0px;
+  font-size: 0.8em;
+  width: 8vmin;
+  margin: 0.6em 0;
 }
+
 .datePickerContainer
 {
-  width: 400px;
+  width: 100%;
   display: inline-block;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+  display: inline-block;
+  vertical-align: top;
+}
+
+svg text {
+  font-size: 1em;
+}
+
+.histogram {
+  width: 100%;
+  max-height: calc(0.625 * (35vmin - 3.25vmin)); /* % of sidebar width */
+}
+
+.histogram .padding {
+  height: 0;
+  padding-bottom: 25vmin;
+  display: inline-block;
+}
+
+.legend {
+  font-size: 0.8em;
 }

@@ -46,23 +46,45 @@ this.props.onDatePickedChanged(this.state.startDate,date);
     render() {
       const { startDate } = this.state;
       const { endDate } = this.state;
-        return (
-          <div style={{ margin: '15px 15px 15px 35px'}}>
-          <Container fluid className='datePickerContainer'>
-          <Row justify="center" className='App-numberHeader' >
-            Configuration
-            </Row>
-            <Row style={{ margin: '12px 0px 12px 0px' }}>
-              <Col  justify="center" >
-              Starting Date
-              </Col>
-              <Col  justify="center" >
-              Ending Date
-              </Col>
-            </Row>
-            <Row>
-              <Col justify="center" >
-              <DatePicker
+    const selectStyle = {
+      control: (provided) => ({
+        ...provided,
+        fontSize: '0.8em',
+        minHeight: '1.6em',
+        borderRadius: '0.2em'
+      }),
+      valueContainer: (provided) => ({
+        ...provided,
+        padding: '0.1em 0.4em'
+      }),
+      menu: (provided) => ({
+        ...provided,
+        margin: '0.4em 0',
+        borderRadius: '0.2em'
+      }),
+      option: (provided) => ({
+        ...provided,
+        fontSize: '0.8em',
+        padding: '0.4em 0.6em'
+      }),
+      dropdownIndicator: (provided) => ({
+        ...provided,
+        height: '1.6em',
+        padding: '0.4em'
+      }),
+      noOptionsMessage: (provided) => ({
+        ...provided,
+        fontSize: '0.8em',
+        padding: '0.4em 0.6em'
+      })
+    };
+    return (
+      <div className='datePickerContainer' width='100%'>
+        <div className='header'>Configuration</div>
+        <div style={{ marginTop: '0.3em' }}>
+          <div style={{ width: '50%', display: 'inline-block' }}>
+            <div>Starting Date</div>
+            <DatePicker
               className='datePicker'
               selected={startDate}
               onChange={this.handleStartChange} 
@@ -71,54 +93,50 @@ this.props.onDatePickedChanged(this.state.startDate,date);
               endDate={endDate}
               minDate={new Date("2009/01/01")}
             />
-              </Col>
-               {/* ToDo:Change the date */}
-              <Col  justify="center" >
-              <DatePicker
-                className='datePicker'
-                selected={endDate}
-                onChange={this.handleEndChange} 
-                selectsEnd
-                endDate={endDate}
-                minDate={startDate}
-                maxDate={new Date("2019/10/11")}
-              />
-              </Col>
-            </Row>
-            <Row style={{ margin: '12px 0px 12px 0px' }}> 
-              <Col >
-            <Select 
-              options={strategyOptions} 
-              defaultValue={strategyOptions[0]}
-              onChange={e => {
-                this.props.onStrategyChanged(e.value);
-                ;}} />
-            {this.props.stockNames &&
-              this.props.stockNames[0] &&
-              <Select
-                options={
-                  this.props.stockNames
-                    .map(stock => ({ value: stock, label: stock }))
-                }
-                defaultValue={
-                  {
-                    value: this.props.stockNames[0],
-                    label: this.props.stockNames[0]
-                  }
-                }
-                onChange={async e => this.props.onStockChanged(e.value)}
-              />}
-            </Col>
-            </Row>
-            <Row >
-              <Col>
-            <button className='button' onClick={this.props.onStartSimulation}>Start Simulation</button>
-            </Col>
-            </Row>
-          </Container>
+          </div>
+          <div style={{ width: '50%', display: 'inline-block' }}>
+            <div>Ending Date</div>
+            <DatePicker
+              className='datePicker'
+              selected={endDate}
+              onChange={this.handleEndChange} 
+              selectsEnd
+              endDate={endDate}
+              minDate={startDate}
+              maxDate={new Date("2019/10/11")}
+            />
+          </div>
         </div>
-        );
-     }
+        <div style={{ margin: '0.6em auto', width: '90%' }}>
+          <Select
+            styles={selectStyle}
+            options={strategyOptions} 
+            defaultValue={strategyOptions[0]}
+            onChange={e => {
+              this.props.onStrategyChanged(e.value);
+            }}
+          />
+          {this.props.stockNames &&
+            this.props.stockNames[0] &&
+            <Select
+              styles={selectStyle}
+              options={
+                this.props.stockNames
+                  .map(stock => ({ value: stock, label: stock }))
+              }
+              defaultValue={
+                {
+                  value: this.props.stockNames[0],
+                  label: this.props.stockNames[0]
+                }
+              }
+              onChange={async e => this.props.onStockChanged(e.value)}
+            />}
+          <button className='button' onClick={this.props.onStartSimulation}>Start Simulation</button>
+        </div>
+      </div>
+    );
+  }
 
     //  handleChange = startDate => {
     //   this.setState({
@@ -131,5 +149,6 @@ this.props.onDatePickedChanged(this.state.startDate,date);
     //      endDate
     //     });
     // };
-  }
-  export default DatePickerStock
+}
+
+export default DatePickerStock

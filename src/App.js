@@ -19,7 +19,6 @@ class App extends Component {
    this.onStrategyChanged = this.onStrategyChanged.bind(this);
    this.runSimulation = this.runSimulation.bind(this);
 
-
    this.state = {
    histArray: [], 
    startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
@@ -148,8 +147,10 @@ onStrategyChanged(newStrategy)
 
   strategy1() {
     // investment strategy1 based on ma5 and ma30
+    const arr = this.toArray(this.state.dataStock);
+    const ratio = this.state.accountStart / this.state.dataSPY[arr[0].date].price;
     let out = {};
-    this.toArray(this.state.dataStock)
+    arr
       .map((d, i, a) => {
         const prev = a[i - 1];
         const prev2 = a[i - 2];
@@ -175,8 +176,10 @@ onStrategyChanged(newStrategy)
           d.shares = 0;
         }
         d.account = d.cash + d.shares * d.price;
-        d.priceSPY =
-          this.state.dataSPY[d.date] ? this.state.dataSPY[d.date].price : 0;
+        d.accountSPY =
+          this.state.dataSPY[d.date]
+            ? ratio * this.state.dataSPY[d.date].price
+            : 0;
         return d;
       })
       .forEach(d => out[d.date] = d);
@@ -185,8 +188,10 @@ onStrategyChanged(newStrategy)
 
   strategy2() {
     // investment strategy1 based on ma5 and ma30
+    const arr = this.toArray(this.state.dataStock);
+    const ratio = this.state.accountStart / this.state.dataSPY[arr[0].date].price;
     let out = {};
-    this.toArray(this.state.dataStock)
+    arr
       .map((d, i, a) => {
         const prev = a[i - 1];
         const prev2 = a[i - 2];
@@ -214,8 +219,10 @@ onStrategyChanged(newStrategy)
           d.shares = 0;
         }
         d.account = d.cash + d.shares * d.price;
-        d.priceSPY =
-          this.state.dataSPY[d.date] ? this.state.dataSPY[d.date].price : 0;
+        d.accountSPY =
+          this.state.dataSPY[d.date]
+            ? ratio * this.state.dataSPY[d.date].price
+            : 0;
         return d;
       })
       .forEach(d => out[d.date] = d);
@@ -287,7 +294,7 @@ onStrategyChanged(newStrategy)
       histArray: dailyGains,
       percentageGain: (accountEnd - this.state.accountStart) / this.state.accountStart * 100,
       percentageGainYearly: yearlyGain * 100,
-      percentageGainSPY: (last.priceSPY - first.priceSPY) / first.priceSPY * 100,
+      percentageGainSPY: (last.accountSPY - first.accountSPY) / first.accountSPY * 100,
       standardDeviation: dailyStdDev * 100,
       maxDrawdown: maxDrawDown,
       sharpeRatio: sharpeRatio
@@ -298,9 +305,15 @@ onStrategyChanged(newStrategy)
   {
     return (
       <div className='App'>
-        <Container fluid>
-          <Row justify='center'>
-            <Col xs="content">
+        <div style={{
+          display: 'inline-block',
+          width: 'calc(35vmin - 3.25vmin)',
+          height: 'calc(100vh - 5vmin)',
+          margin: '2.5vmin 0',
+          verticalAlign: 'top'
+        }}>
+          <Container fluid>
+            <Row justify='center'>
               <DatePickerStock
                 stockNames={this.state.stockNames}
                 dataStock={this.state.dataStock}
@@ -309,62 +322,78 @@ onStrategyChanged(newStrategy)
                 onStrategyChanged={this.onStrategyChanged}
                 onStockChanged={(stock) => this.setState({ stockSelection: stock })}
               />
-            </Col>
-            <Col xs="content">
-              <Container fluid>
-                <Row justify='center'>
-                  <SingleNumber header='Start Value' value={`${this.state.accountStart.toFixed(2)}`}/>
-                  <SingleNumber header='End Value' value={`${this.state.accountEnd.toFixed(2)}`}/>
-                  <SingleNumber header='% Gain' value={`${this.state.percentageGain.toFixed(1)}%`}/>
-                  <SingleNumber header='% Gain Yearly Avg' value={`${this.state.percentageGainYearly.toFixed(1)}%`}/>
-                </Row>
-                <Row justify='center'>
-                  <SingleNumber header='Std Dev' value={`${this.state.standardDeviation.toFixed(1)}%`}/>
-                  <SingleNumber header='S&amp;P500 % Gain' value={`${this.state.percentageGainSPY.toFixed(1)}%`}/>
-                  <SingleNumber header='Max Drawdown %' value={`${this.state.maxDrawdown.toFixed(1)}%`}/>
-                  <SingleNumber header='Sharpe Ratio' value={`${this.state.sharpeRatio.toFixed(1)}`}/>
-                </Row>
-              </Container>
-            </Col>
-          </Row>
-        </Container>
-        <div id="divLineChart"  className='Chart'>
-          <div className='App-header'>
-            <h4>Daily Gain/Loss Histogram</h4>
-          </div>
-          <BarChartHistagram data={this.state.histArray} size={[800,500]}/>
+            </Row>
+            <Row justify='center' className='header'>
+              Daily Gain/Loss Histogram
+            </Row>
+            <Row justify='center'>
+              <BarChartHistagram data={this.state.histArray} />
+            </Row>
+            <Row justify='center'>
+              <SingleNumber header='Start Value' value={`${this.state.accountStart.toFixed(2)}`}/>
+              <div style={{ margin: 'auto' }} />
+              <SingleNumber header='End Value' value={`${this.state.accountEnd.toFixed(2)}`}/>
+            </Row>
+            <Row justify='center'>
+              <SingleNumber header='% Gain' value={`${this.state.percentageGain.toFixed(1)}%`}/>
+              <div style={{ margin: 'auto' }} />
+              <SingleNumber header='% Gain Yearly Avg' value={`${this.state.percentageGainYearly.toFixed(1)}%`}/>
+            </Row>
+            <Row justify='center'>
+              <SingleNumber header='Std Dev' value={`${this.state.standardDeviation.toFixed(1)}%`}/>
+              <div style={{ margin: 'auto' }} />
+              <SingleNumber header='S&amp;P500 % Gain' value={`${this.state.percentageGainSPY.toFixed(1)}%`}/>
+            </Row>
+            <Row justify='center'>
+              <SingleNumber header='Max Drawdown %' value={`${this.state.maxDrawdown.toFixed(1)}%`}/>
+              <div style={{ margin: 'auto' }} />
+              <SingleNumber header='Sharpe Ratio' value={`${this.state.sharpeRatio.toFixed(1)}`}/>
+            </Row>
+          </Container>
         </div>
-        <div className='Chart'>
-          <div className='App-header'>
-            <h4>Account Value</h4>
-          </div>
-          <TimeLineChart
-            data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
-            data2={this.state.dataSPY && this.toArray(this.state.dataSPY)}
-            size={[800,500]}
-            yAxis='account'
-            lineNames={['Account value', 'S&P500 value']}
-          />
-        </div>
-        <div className='Chart'>
-          <div className='App-header'>
-            <h4>Historical Stock Price</h4>
-          </div>
-          <TimeLineChart
-            data={this.state.dataStock && this.toArray(this.state.dataStock)}
-            size={[800,500]}
-            yAxis='price'
-          />
-        </div>
-        <div className='Chart'>
-          <div className='App-header'>
-            <h4>Moving Averages</h4>
-          </div>
-          <TimeLineChart
-            data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
-            size={[800,500]}
-            yAxes={['MA5', 'MA10', 'MA20', 'MA30']}
-          />
+        <div style={{
+          display: 'inline-block',
+          width: '2.5vmin',
+          height: '0'
+        }} />
+        <div style={{
+          display: 'inline-block',
+          width: 'calc(100vw - 35vmin - 3.25vmin)',
+          height: 'calc(100vh - 5vmin)',
+          margin: '2.5vmin 0',
+          overflowX: 'visible',
+          overflowY: 'visible',
+          verticalAlign: 'top'
+        }}>
+          <Container fluid>
+            <Row className='header'>Account Value</Row>
+            <Row style={{ height: 'calc(25vh - 3em)' }}>
+              <TimeLineChart
+                data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
+                keys={['account', 'accountSPY']}
+                names={['Account value', 'S&P500 value']}
+                format='$.0f'
+              />
+            </Row>
+            <Row className='header'>Shares Held</Row>
+            <Row style={{ height: 'calc(25vh - 3em)' }}>
+              <TimeLineChart
+                data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
+                keys={['shares']}
+                names={['Shares held']}
+                format='.0f'
+              />
+            </Row>
+            <Row className='header'>Stock Price</Row>
+            <Row style={{ height: 'calc(50vh - 3em)' }}>
+              <TimeLineChart
+                data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
+                keys={['price', 'MA5', 'MA10', 'MA20', 'MA30']}
+                format='$.0f'
+                toggle='true'
+              />
+            </Row>
+          </Container>
         </div>
       </div>
     );

@@ -2,49 +2,39 @@ import React, { Component } from 'react'
 import './../App.css'
 import './../Chart.css';
 import * as d3 from "d3";
-import { cpus } from 'os';
 
-const lineColors =[
-   'steelblue',
-   'green',
-   'yellow',
-   'orange',
-   'red',
-   'violet'
-
-
-];
 class TimeLineChart extends Component {
-   constructor(props){
-      super(props)
-      this.createChart = this.createChart.bind(this)
-   }
-   componentDidMount() {
-      this.createChart()
-   }
-   componentDidUpdate() {
-      var svg = d3.select(this.node)
-         .selectAll("*").remove();
-         
-       this.createChart()
-    }
+  constructor(props){
+    super(props)
+    this.createChart = this.createChart.bind(this);
+    this.enabled = {};
+  }
+
+  componentDidMount() {
+    this.createChart();
+    window.addEventListener('resize', this.createChart);
+  }
+
+  componentDidUpdate() {
+    this.createChart();
+  }
 
   createChart() 
   {
     const node = this.node;
-    const padding = { top: 0, right: 0, bottom: 0, left: 0 };
-    const yName = this.props.yAxes ? this.props.yAxes[0] : this.props.yAxis;
+    const keys = this.props.keys;
    
     // set the dimensions and margins of the graph
-    var margin = {top: 40, right: 40, bottom: 60, left: 80},
-    width =this.props.size[0] - margin.left - margin.right,
-    height = this.props.size[1] - margin.top - margin.bottom;
+    var margin = {top: 15, right: 150, bottom: 25, left: 60},
+    width = this.node.clientWidth - margin.left - margin.right,
+    height = this.node.clientHeight - margin.top - margin.bottom;
+
+    d3.select(this.node)
+      .selectAll("*").remove();
 
     var svg =
       d3.select(node)
         .append("svg")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height + margin.top + margin.bottom)
         .append("g")
           .attr("transform",
                 `translate(${margin.left},${margin.top})`);
@@ -56,7 +46,7 @@ class TimeLineChart extends Component {
            // Add X axis
          var x = d3.scaleTime()
             .domain(d3.extent(data, function(d) { return d.time; }))
-            .range([padding.left, width - padding.right]);
+            .range([0, width]);
             svg.append("g")
             .attr("class", "axis")
             .attr("transform", "translate(0," + height + ")")
@@ -65,18 +55,7 @@ class TimeLineChart extends Component {
             .style("font-size", 14)
             .style("fill", "#045a5a");
 
-       svg.selectAll(".axis text")  // select all the text elements for the xaxis
-       .attr("transform", function(d) {
-           return "translate(" + this.getBBox().height*-2 + "," + this.getBBox().height + ")rotate(-45)";});
-            
-         
-         var yMax = d3.max(data.map (d => { return d[yName];}));
-
-         if (this.props.data2)
-         {
-            var dataSPYMax =  d3.max(this.props.data2.map (d => { return d[yName];}));
-            yMax = dataSPYMax > yMax ? dataSPYMax : yMax;
-         }
+         var yMax = d3.max(data.map(d => keys.map(k => d[k]).reduce((acc, v) => Math.max(acc, v))));
 
          // Add Y axis
          var y = d3.scaleLinear()
@@ -84,75 +63,22 @@ class TimeLineChart extends Component {
             .range([ height, 0]);
             svg.append("g")
             .attr("class", "axis")
-            .call(d3.axisLeft(y))
+            .call(d3.axisLeft(y).tickFormat(d3.format(this.props.format)))
             .selectAll("text")
-            .style("font-size", 14)
             .style("fill", "#045a5a");
 
-
-         var keys;
          var color;
-         var legend = false;
 
-
-         if (this.props.yAxis)
-         {
-            if (this.props.lineNames)
-            {
-               keys = this.props.lineNames;
-               color = d3.scaleOrdinal()
-               .domain(keys)
-               .range(d3.schemeSet2);
-               legend = true;
-            }
-            svg.append("text")
-            .attr("class", "axis")
-            .attr("text-anchor", "end")
-            .attr("y", 2 )
-            .attr("x", -20)
-            .style("font-size", 16)
-            .style("fill", "#045a5a")
-            .text(yName);
-           
-             svg.append("path")
-             .datum(data)
-             .attr("fill", "none")
-             .attr("stroke", this.props.lineNames ? color(keys[0]) : 'steelblue')
-             .attr("stroke-width", 1.5)
-             .attr("d", d3.line()
-                .x(function(d) { return x(d.time) })
-                .y(function(d) { return y(d[yName]) })
-                )
-
-         if (this.props.data2)
-         {             svg.append("path")
-                 .datum(this.props.data2)
-                .attr("fill", "none")
-                .attr("stroke", color(keys[1]))
-                .attr("stroke-width", 1.5)
-                .attr("d", d3.line()
-                .x(function(d) { return x(d.time) })
-                .y(function(d) { return y(d[yName]) })
-                )
-         }
-         }
-
-         if(this.props.yAxes)
-         {
-
-            var keys = this.props.yAxes;
             // Usually you have a color scale in your chart already
             color = d3.scaleOrdinal()
             .domain(keys)
             .range(d3.schemeSet2);
 
-            legend = true;
-
-            var i =0;
-            this.props.yAxes.forEach(
-               function(element) {
+            keys.forEach(
+               function(element, i) {
                   svg.append("path")
                   .datum(data)
+                  .attr('id', `plot-${i}`)
                   .attr("fill", "none")
                   .attr("stroke", color(element))
                   .attr("stroke-width", 1.5)
@@ -161,44 +87,70 @@ class TimeLineChart extends Component {
                      .x(function(d) { return x(d.time) })
                      .y(function(d) { return y(d[element]) })
                      );;
-               i++;
                });
-         }
 
-
-         if(legend)
-         {
-
-         // Add legend
-                           // Add one dot in the legend for each name.
-                           svg.selectAll("mydots")
-                           .data(keys)
-                           .enter()
-                           .append("circle")
-                           .attr("cx", width - 120 )
-                           .attr("cy", function(d,i){ return  width/3 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
-                           .attr("r", 7)
-                           .style("fill", function(d){ return color(d)})
-         
-                           // Add one label in the legend for each name.
-                           svg.selectAll("mylabels")
-                           .data(keys)
-                           .enter()
-                           .append("text")
-                           .attr("x", width - 100)
-                           .attr("y", function(d,i){ return width/3 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
-                           .style("fill", function(d){ return color(d)})
-                           .text(function(d){ return d})
-                           .attr("text-anchor", "left")
-                           .style("alignment-baseline", "middle")
-         }
-               
-        }
+      // Add legend
+      svg.append('g')
+        .attr('transform', `translate(${width + 20}, ${margin.top})`)
+        .selectAll('g')
+        .data(keys)
+        .enter()
+        .append('g')
+          .attr('transform', (d, i) => `translate(0, ${i * 25})`)
+          .call(g => {
+            g.append('circle')
+              .attr('class', 'legend-toggle')
+              .attr('cx', 0)
+              .attr('cy', 0)
+              .attr('r', 7)
+              .style('fill', d => color(d))
+              .style('stroke', d => color(d))
+            g.append('text')
+              .attr('class', 'legend')
+              .attr('x', 15)
+              .attr('y', 0)
+              .style('fill', d => color(d))
+              .text((d, i) => this.props.names ? this.props.names[i] : d)
+              .attr('text-anchor', 'left')
+              .attr('dominant-baseline', 'middle');
+          });
+      if (this.props.toggle) {
+        var enabled = this.enabled;
+        svg.selectAll('.legend-toggle')
+          .each(function(d, i) {
+            d3.select(this)
+              .on('mouseover', function() {
+                d3.select(this).transition()
+                  .duration('50')
+                  .attr('opacity', '0.5');
+              })
+              .on('mouseout', function() {
+                d3.select(this).transition()
+                  .duration('50')
+                  .attr('opacity', '1');
+              })
+              .on('mousedown', function() {
+                const value = !enabled[i];
+                d3.select(this).transition()
+                  .duration('50')
+                  .attr('fill-opacity', value ? '1' : '0');
+                svg.select(`#plot-${i}`)
+                  .attr('opacity', value ? '1' : '0');
+                enabled[i] = value;
+              });
+            const value = enabled[i] !== undefined ? enabled[i] : i == 0;
+            enabled[i] = value;
+            d3.select(this)
+              .attr('fill-opacity', value ? '1' : '0');
+            svg.select(`#plot-${i}`)
+              .attr('opacity', value ? '1' : '0');
+          });
+      }
+    }
    }
 render() {
-      return <svg ref={node => this.node = node}
-      width={this.props.size[0]} height={this.props.size[1]}>
-      </svg>
+      return <svg ref={node => this.node = node} />
    }
 }
+
 export default TimeLineChart

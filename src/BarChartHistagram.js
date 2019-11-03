@@ -4,36 +4,34 @@ import './Chart.css';
 import * as d3 from "d3";
 
 class BarChartHistagram extends Component {
-    constructor(props){
-       super(props)
-       this.createBarChart = this.createBarChart.bind(this)
-       var svg = d3.select(this.node);
-    }
-    componentDidMount() {
-       this.createBarChart()
-    }
-    componentDidUpdate() {
-      var svg = d3.select(this.node)
-         .selectAll("*").remove();
-         
-       this.createBarChart()
-    }
+  constructor(props) {
+    super(props)
+    this.createBarChart = this.createBarChart.bind(this);
+  }
 
-    createBarChart() 
-    {
-        const node = this.node
+  componentDidMount() {
+    this.createBarChart();
+    window.addEventListener('resize', this.createBarChart);
+  }
 
-         // set the dimensions and margins of the graph
-         var margin = {top: 40, right: 40, bottom: 60, left: 80},
-         width =this.props.size[0] - margin.left - margin.right,
-         height = this.props.size[1] - margin.top - margin.bottom;
+  componentDidUpdate() {
+    this.createBarChart()
+  }
 
-         this.svg = d3.select(node)
-         .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  createBarChart() 
+  {
+    // set the dimensions and margins of the graph
+    var margin = {top: 15, right: 0, bottom: 25, left: 25},
+    width = this.node.clientWidth - margin.left - margin.right,
+    height = this.node.clientHeight - margin.top - margin.bottom;
+
+    d3.select(this.node)
+      .selectAll("*").remove();
+
+    this.svg = d3.select(this.node)
+      .append("svg")
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         if (this.props.data.length <= 0 )
            return;
@@ -46,7 +44,7 @@ class BarChartHistagram extends Component {
         // X axis: scale and draw:
         var x = d3.scaleLinear()
         .domain([d3.min(histArray), d3.max(histArray)])  
-        .range([0, width - 10]);
+        .range([0, width - 20]);
         this.svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .attr("class", "axis")
@@ -94,10 +92,11 @@ class BarChartHistagram extends Component {
 
     }
 
- render() {
-            return <svg ref={node => this.node = node}
-            width={this.props.size[0]} height={this.props.size[1]}>
-            </svg>
-    }
+  render() {
+    return <div className='histogram'>
+      <div className='padding' />
+      <svg ref={node => this.node = node} />
+    </div>
+  }
  }
  export default BarChartHistagram
