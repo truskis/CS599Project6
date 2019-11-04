@@ -8,8 +8,8 @@ import AsyncSelect from 'react-select/async';
 const strategyOptions = [
   { value: 'strategy1', label: 'Single stock 5d vs 10d SMA' },
   { value: 'strategy2', label: 'Single stock 5d vs 10d SMA & volume' },
-  // { value: 'strategy3', label: 'strategy3' },
-  // { value: 'strategy4', label: 'strategy4' }
+  { value: 'strategy3', label: 'Buy < BB (N=20, K=1), sell > MA5' },
+  { value: 'strategy4', label: 'Buy < BB (N=30, K=1), sell > MA5' }
 ];
 
 class DatePickerStock extends Component {

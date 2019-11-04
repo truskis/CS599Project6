@@ -116,6 +116,14 @@ onStrategyChanged(newStrategy)
           d.MA10 = this.movingAverage(a, 10, i, d => d.price);
           d.MA20 = this.movingAverage(a, 20, i, d => d.price);
           d.MA30 = this.movingAverage(a, 30, i, d => d.price);
+          d.SD5 = this.standardDeviation(this.sliceRecent(a, 5, i, d => d.price));
+          d.SD10 = this.standardDeviation(this.sliceRecent(a, 10, i, d => d.price));
+          d.SD20 = this.standardDeviation(this.sliceRecent(a, 20, i, d => d.price));
+          d.SD30 = this.standardDeviation(this.sliceRecent(a, 30, i, d => d.price));
+          d.Boll20_1L = d.MA20 - d.SD20;
+          d.Boll20_1U = d.MA20 + d.SD20;
+          d.Boll30_1L = d.MA30 - d.SD30;
+          d.Boll30_1U = d.MA30 + d.SD30;
           tmp.push(d);
         });
       });
@@ -260,11 +268,155 @@ onStrategyChanged(newStrategy)
     return out;
   }
 
+  async strategy3() {
+    await this.fetchStocks();
+    const ratio =
+      this.state.accountStart / this.state.dataByStock.get('SPY')[0].price;
+    let out = {};
+    let curr = {
+      cash: this.state.accountStart,
+      account: this.state.accountStart,
+      positions: 0,
+      data: new Map(),
+      shares: { total: 0 }
+    };
+    this.state.dataByDate
+      .forEach((stocks, date) => {
+        const prev = curr;
+        curr = Object.assign({}, prev, { date: date, time: d3.timeParse('%Y-%m-%d')(date) });
+        curr.data = new Map([...prev.data, ...this.state.data.get(date)]);
+        curr.shares = Object.assign({}, prev.shares);
+        let data = curr.data;
+        let shares = curr.shares;
+        Object.entries(shares)
+          .forEach(
+            ([k, v]) => {
+              if (k == 'total') return;
+              const stock = data.get(k)[0];
+              if (v > 0 && stock.price > stock.MA5) {
+                curr.cash += v * stock.price;
+                shares.total -= v;
+                shares[k] = 0;
+              }
+            }
+          );
+        const buySelection =
+          stocks.reduce((acc, stock) => {
+            if (stock.price <= 0) return acc;
+            const diff = (stock.Boll20_1L - stock.price) / stock.price;
+            return diff > 0
+              ? acc.concat([{ diff: diff, stock: stock }])
+              : acc;
+          }, [])
+            .sort((a, b) => a.diff - b.diff);
+        buySelection.forEach(
+          d => {
+            if (d.stock.price <= 0) return;
+            const buy = Math.floor((curr.cash / buySelection.length) / d.stock.price);
+            curr.cash -= buy * d.stock.price;
+            shares.total += buy;
+            shares[d.stock.stock] =
+              shares[d.stock.stock]
+                ? shares[d.stock.stock] + buy
+                : buy;
+          }
+        );
+        curr.positions = d3.sum(Object.entries(shares)
+          .filter(([k, v]) => k != 'total')
+          .map(([k, v]) => v * data.get(k)[0].price));
+        curr.account = curr.cash + curr.positions;
+        curr.accountSPY =
+          data.get('SPY')[0].price
+            ? ratio * data.get('SPY')[0].price
+            : 0;
+        out[date] = curr;
+      })
+    const stocks = Object.keys(curr.shares).sort();
+    this.setState({
+      stockSelection: stocks,
+      stockSelected: stocks[0]
+    });
+    return out;
+  }
+
+  async strategy4() {
+    await this.fetchStocks();
+    const ratio =
+      this.state.accountStart / this.state.dataByStock.get('SPY')[0].price;
+    let out = {};
+    let curr = {
+      cash: this.state.accountStart,
+      account: this.state.accountStart,
+      positions: 0,
+      data: new Map(),
+      shares: { total: 0 }
+    };
+    this.state.dataByDate
+      .forEach((stocks, date) => {
+        const prev = curr;
+        curr = Object.assign({}, prev, { date: date, time: d3.timeParse('%Y-%m-%d')(date) });
+        curr.data = new Map([...prev.data, ...this.state.data.get(date)]);
+        curr.shares = Object.assign({}, prev.shares);
+        let data = curr.data;
+        let shares = curr.shares;
+        Object.entries(shares)
+          .forEach(
+            ([k, v]) => {
+              if (k == 'total') return;
+              const stock = data.get(k)[0];
+              if (v > 0 && stock.price > stock.MA5) {
+                curr.cash += v * stock.price;
+                shares.total -= v;
+                shares[k] = 0;
+              }
+            }
+          );
+        const buySelection =
+          stocks.reduce((acc, stock) => {
+            if (stock.price <= 0) return acc;
+            const diff = (stock.Boll30_1L - stock.price) / stock.price;
+            return diff > 0
+              ? acc.concat([{ diff: diff, stock: stock }])
+              : acc;
+          }, [])
+            .sort((a, b) => a.diff - b.diff);
+        buySelection.forEach(
+          d => {
+            if (d.stock.price <= 0) return;
+            const buy = Math.floor((curr.cash / buySelection.length) / d.stock.price);
+            curr.cash -= buy * d.stock.price;
+            shares.total += buy;
+            shares[d.stock.stock] =
+              shares[d.stock.stock]
+                ? shares[d.stock.stock] + buy
+                : buy;
+          }
+        );
+        curr.positions = d3.sum(Object.entries(shares)
+          .filter(([k, v]) => k != 'total')
+          .map(([k, v]) => v * data.get(k)[0].price));
+        curr.account = curr.cash + curr.positions;
+        curr.accountSPY =
+          data.get('SPY')[0].price
+            ? ratio * data.get('SPY')[0].price
+            : 0;
+        out[date] = curr;
+      })
+    const stocks = Object.keys(curr.shares).sort();
+    this.setState({
+      stockSelection: stocks,
+      stockSelected: stocks[0]
+    });
+    return out;
+  }
+
   async runSimulation()
   {
     const strategies = {
       'strategy1': this.strategy1.bind(this),
-      'strategy2': this.strategy2.bind(this)
+      'strategy2': this.strategy2.bind(this),
+      'strategy3': this.strategy3.bind(this),
+      'strategy4': this.strategy4.bind(this)
     };
 
     const dataAccount = await strategies[this.state.strategy]();
@@ -487,14 +639,18 @@ onStrategyChanged(newStrategy)
                   'MA5',
                   'MA10',
                   'MA20',
-                  'MA30'
+                  'MA30',
+                  'Boll20_1L',
+                  'Boll30_1L'
                 ]}
                 names={[
                   'Stock price',
                   '5-day SMA',
                   '10-day SMA',
                   '20-day SMA',
-                  '30-day SMA'
+                  '30-day SMA',
+                  'BB N=20 K=1 (L)',
+                  'BB N=30 K=1 (L)'
                 ]}
                 format='$.0f'
                 toggle='true'
