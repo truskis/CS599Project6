@@ -18,7 +18,8 @@ class DatePickerStock extends Component {
     super(props)
     this.state = {
       startDate : new Date("2009/01/01"),
-      endDate : new Date("2009/12/31")
+      endDate : new Date("2009/12/31"),
+      showStocks: true,
     };
     this.handleStartChange = this.handleStartChange.bind(this);
     this.handleEndChange = this.handleEndChange.bind(this);
@@ -114,18 +115,28 @@ this.props.onDatePickedChanged(this.state.startDate,date);
             defaultValue={strategyOptions[0]}
             onChange={e => {
               this.props.onStrategyChanged(e.value);
+              this.setState
+              ({
+               showStocks : e.value == 'strategy1' || e.value == 'strategy2'
+              });
             }}
           />
+          { this.state.showStocks ? 
           <AsyncSelect
             styles={selectStyle}
             defaultOptions
             loadOptions={() => new Promise(
-              async resolve => resolve((await this.props.stockNames)
-                .map(stock => ({ value: stock, label: stock })))
+              async resolve =>{ resolve((await this.props.stockNames)
+                .map(stock => ({ value: stock, label: stock }
+               )))
+               document.getElementById("startButton").disabled = false;
+                }
             )}
-            onChange={e => this.props.onStockChanged(e.value)}
+            onChange={e => 
+              {this.props.onStockChanged(e.value)}}
           />
-          <button className='button' onClick={this.props.onStartSimulation}>Start Simulation</button>
+          : null}
+          <button id="startButton"  className='button' onClick={this.props.onStartSimulation}>Start Simulation</button>
         </div>
       </div>
     );

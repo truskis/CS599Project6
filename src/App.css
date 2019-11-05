@@ -78,6 +78,13 @@
   color: rgb(48, 48, 51);
 }
 
+button:disabled,
+button[disabled]{
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+}
+
 .datePicker
 {
   font-size: 0.8em;
