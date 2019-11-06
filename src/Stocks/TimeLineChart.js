@@ -52,6 +52,7 @@ class TimeLineChart extends Component {
             .attr("class", "axis")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%m/%y")))
+            xAxis
             .selectAll("text")
             .style("font-size", 14)
             .style("fill", "#045a5a");
@@ -68,6 +69,16 @@ class TimeLineChart extends Component {
             .call(d3.axisLeft(y).tickFormat(d3.format(this.props.format)))
             .selectAll("text")
             .style("fill", "#045a5a");
+
+            // Add a clipPath: everything out of this area won't be drawn.
+            var clip = svg.append("defs").append("svg:clipPath")
+            .attr("id", "clip")
+            .append("svg:rect")
+            .attr("width", width )
+            .attr("height", height )
+            .attr("x", 0)
+            .attr("y", 0);
+
 
          var color;
 
