@@ -43,20 +43,36 @@ class TimeLineChart extends Component {
     if (this.props.data)
     {
       const data = this.props.data;
-           // Add X axis
-         var x = d3.scaleTime()
-            .domain(d3.extent(data, function(d) { return d.time; }))
-            .range([0, width]);
-            
-           var xAxis = svg.append("g")
-            .attr("class", "axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%m/%y")));
-            xAxis
-            .selectAll("text")
-            .style("font-size", 14)
-            .style("fill", "#045a5a");
+      const updateAxis = this.props.updateAxis;
 
+      // Add X axis
+      const xDomain = d3.extent(data, d => d.time);
+      if (!this.valid) {
+        this.x = d3.scaleTime()
+          .domain(xDomain)
+          .range([0, width]);
+        this.valid = true;
+      }
+      const x = this.x;
+      const xTicks = scale =>
+        scale.ticks()
+          .filter(tick =>
+            !tick.getHours()
+              && !tick.getMinutes()
+              && !tick.getSeconds()
+              && !tick.getMilliseconds());
+      const xGen = (scale, ticks) =>
+        d3.axisBottom(scale)
+          .tickValues(ticks)
+          .tickFormat(d3.timeFormat("%m/%d/%y"));
+      this.xAxis = svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xGen(x, xTicks(x)));
+      this.xAxis
+        .selectAll("text")
+        .style("font-size", 14)
+        .style("fill", "#045a5a");
 
          var yMax = d3.max(data.map(d => keys.map(k => d[k]).reduce((acc, v) => Math.max(acc, v || 0))));
 
@@ -106,25 +122,28 @@ class TimeLineChart extends Component {
             var line = svg.append('g')
                     .attr("clip-path", "url(#clip)");
 
-            var lines =  [];
+      function genLine(k) {
+        return d3.line()
+          .x(d => x(d.time))
+          .y(d => y(d[k] || 0));
+      }
+      this.genLine = genLine;
 
-            keys.forEach(
-               function(element, i) {
-                var templine =
-                line.append("path")
-                  .datum(data)
-                  .attr('id', `plot-${i}`)
-                  .attr("fill", "none")
-                  .attr("stroke", color(element))
-                  .attr("stroke-width", 1.5)
-                  .attr("data-legend",function(d) { return d[element] || 0})
-                  .attr("d", d3.line()
-                     .x(function(d) { return x(d.time) })
-                     .y(function(d) { return y(d[element] || 0) })
-                     );;
+      function genLines() {
+        return keys.map(
+          (k, i) =>
+            line.append("path")
+              .datum(data)
+              .attr('id', `plot-${i}`)
+              .attr('fill', 'none')
+              .attr('stroke', color(k))
+              .attr('stroke-width', 1.5)
+              .attr('data-legend', d => d[k] || 0)
+              .attr('d', genLine(k))
+        );
+      }
 
-                     lines.push(templine);
-               });
+      this.lines = genLines();
 
                line
                .append("g")
@@ -140,49 +159,31 @@ class TimeLineChart extends Component {
 
       // What are the selected boundaries?
       var extent = d3.event.selection
+      const domain = x.domain();
 
       // If no selection, back to initial coordinate. Otherwise, update X axis domain
       if(!extent){
         if (!idleTimeout) return idleTimeout = setTimeout(idled, 350); // This allows to wait a little bit
-        x.domain([4,8])
+        x.domain(xDomain);
       }else{
         x.domain([ x.invert(extent[0]), x.invert(extent[1]) ])
         line.select(".brush").call(brush.move, null) // This remove the grey brush area as soon as the selection has been done
       }
 
-
-      // TODO: understand why this is not working
-     xAxis.transition().duration(1000).call(d3.axisBottom(x))
-
-          
-      keys.forEach(
-        function(element, i) {
-          lines[i]
-          .transition()
-          .duration(1000)
-          .attr("d", d3.line()
-          .x(function(d) { return x(d.time) })
-          .y(function(d) { return y(d[element] || 0) })
-          )
-        });
+      const ticks = xTicks(x);
+      if (ticks.length >= 2) {
+        updateAxis(x.domain(), xGen(x, ticks));
+      }
+      else
+      {
+        x.domain(domain);
+      }
     }
 
     // If user double click, reinitialize the chart
-    svg.on("dblclick",function(){
-      x.domain(d3.extent(data, function(d) { return d.time; }))
-      xAxis.transition().call(d3.axisBottom(x))
-
-      keys.forEach(
-        function(element, i) {
-      
-      lines[i]
-        .transition()
-        .duration(100)
-        .attr("d", d3.line()
-        .x(function(d) { return x(d.time) })
-        .y(function(d) { return y(d[element] || 0) })
-      )
-        });
+    svg.on("dblclick", () => {
+      x.domain(xDomain);
+      updateAxis(x.domain(), xGen(x, xTicks(x)));
     });
 
       // Add legend
@@ -243,7 +244,27 @@ class TimeLineChart extends Component {
           });
       }
     }
-   }
+  }
+
+  resetAxis() {
+    this.valid = false;
+  }
+
+  updateAxis(domain, axis) {
+    this.x.domain(domain);
+    this.xAxis.transition().duration(1000).call(axis);
+    console.log(this.props.keys);
+    this.props.keys.forEach(
+      (k, i) => {
+        console.log(this.lines[i]);
+        this.lines[i]
+          .transition()
+          .duration(1000)
+          .attr('d', this.genLine(k));
+      }
+    );
+  }
+
 render() {
       return <svg ref={node => this.node = node} />
    }

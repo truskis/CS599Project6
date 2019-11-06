@@ -22,8 +22,8 @@ class App extends Component {
    const stockNames = this.fetchNames();
   this.state = {
    histArray: [], 
-   startDate:d3.timeParse("%m/%d/%Y")("03/02/2009"),
-   endDate:d3.timeParse("%m/%d/%Y")("11/31/2009"),
+   startDate:d3.utcParse("%m/%d/%Y")("03/02/2009"),
+   endDate:d3.utcParse("%m/%d/%Y")("11/31/2009"),
    strategy:'strategy1',
       stockNames: stockNames,
       stockSimulate: stockNames[0],
@@ -41,6 +41,10 @@ class App extends Component {
       runningStrategy:false,
     };
     this.state.accountEnd = this.state.accountStart;
+    this.chartAccount = React.createRef();
+    this.chartPositions = React.createRef();
+    this.chartShares = React.createRef();
+    this.chartStock = React.createRef();
   }
 
 //  onStartSimulation()
@@ -110,7 +114,7 @@ onStrategyChanged(newStrategy)
     group(raw, d => d.stock)
       .forEach((prices, stock) => {
         prices.forEach((d, i, a) => {
-          d.time = d3.timeParse('%Y-%m-%d')(d.date);
+          d.time = d3.utcParse('%Y-%m-%d')(d.date);
           d.price = +d.adjusted_close;
           d.volume = +d.volume;
           d.MA5  = this.movingAverage(a,  5, i, d => d.price);
@@ -290,7 +294,7 @@ onStrategyChanged(newStrategy)
     this.state.dataByDate
       .forEach((stocks, date) => {
         const prev = curr;
-        curr = Object.assign({}, prev, { date: date, time: d3.timeParse('%Y-%m-%d')(date) });
+        curr = Object.assign({}, prev, { date: date, time: d3.utcParse('%Y-%m-%d')(date) });
         curr.data = new Map([...prev.data, ...this.state.data.get(date)]);
         curr.shares = Object.assign({}, prev.shares);
         let data = curr.data;
@@ -364,7 +368,7 @@ onStrategyChanged(newStrategy)
     this.state.dataByDate
       .forEach((stocks, date) => {
         const prev = curr;
-        curr = Object.assign({}, prev, { date: date, time: d3.timeParse('%Y-%m-%d')(date) });
+        curr = Object.assign({}, prev, { date: date, time: d3.utcParse('%Y-%m-%d')(date) });
         curr.data = new Map([...prev.data, ...this.state.data.get(date)]);
         curr.shares = Object.assign({}, prev.shares);
         let data = curr.data;
@@ -489,6 +493,10 @@ onStrategyChanged(newStrategy)
     };
     const accountEnd = last.account;
     console.log(dataAccount);
+    this.chartAccount.current.resetAxis();
+    this.chartPositions.current.resetAxis();
+    this.chartShares.current.resetAxis();
+    this.chartStock.current.resetAxis();
     this.setState({
       dataAccount: dataAccount,
       accountEnd: accountEnd,
@@ -542,6 +550,12 @@ onStrategyChanged(newStrategy)
         width: '10vmin'
       })
     };
+    function updateAxis(domain, axis) {
+      this.chartAccount.current.updateAxis(domain, axis);
+      this.chartPositions.current.updateAxis(domain, axis);
+      this.chartShares.current.updateAxis(domain, axis);
+      this.chartStock.current.updateAxis(domain, axis);
+    }
     return (
       <div className='App'>
         <div style={{
@@ -614,11 +628,13 @@ onStrategyChanged(newStrategy)
             </Row>
             <Row className={ this.state.focusChart == 1 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
+                ref={this.chartAccount}
                 focus={this.state.focusChart == 1}
                 data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
                 keys={['account', 'positions', 'accountSPY']}
                 names={['Account value', 'Positions', 'S&P500 value']}
                 format='$.0f'
+                updateAxis={updateAxis.bind(this)}
               />
             </Row>
             <Row
@@ -629,12 +645,14 @@ onStrategyChanged(newStrategy)
             </Row>
             <Row className={ this.state.focusChart == 2 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
+                ref={this.chartPositions}
                 focus={this.state.focusChart == 2}
                 data={this.state.dataAccount && this.toArray(this.state.dataAccount).map(d => Object.assign({ time: d.time }, d.shares))}
                 keys={['count']}
                 names={['Positions']}
                 format='.0f'
                 integer
+                updateAxis={updateAxis.bind(this)}
               />
             </Row>
             <Row
@@ -654,12 +672,14 @@ onStrategyChanged(newStrategy)
             </Row>
             <Row className={ this.state.focusChart == 3 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
+                ref={this.chartShares}
                 focus={this.state.focusChart == 3}
                 data={this.state.dataAccount && this.toArray(this.state.dataAccount).map(d => Object.assign({ time: d.time }, d.shares))}
                 keys={[this.state.stockSelected]}
                 names={['Shares']}
                 format='.0f'
                 integer
+                updateAxis={updateAxis.bind(this)}
               />
             </Row>
             <Row
@@ -680,6 +700,7 @@ onStrategyChanged(newStrategy)
             </Row>
             <Row className={ this.state.focusChart == 4 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
+                ref={this.chartStock}
                 focus={this.state.focusChart == 4}
                 data={
                   this.state.dataByStock
@@ -705,6 +726,7 @@ onStrategyChanged(newStrategy)
                 ]}
                 format='$.0f'
                 toggle='true'
+                updateAxis={updateAxis.bind(this)}
               />
             </Row>
           </Container>
