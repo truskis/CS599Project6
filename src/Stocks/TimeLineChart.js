@@ -51,7 +51,7 @@ class TimeLineChart extends Component {
            var xAxis = svg.append("g")
             .attr("class", "axis")
             .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%m/%y")))
+            .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%m/%y")));
             xAxis
             .selectAll("text")
             .style("font-size", 14)
