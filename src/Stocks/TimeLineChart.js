@@ -74,6 +74,7 @@ class TimeLineChart extends Component {
             var clip = svg.append("defs").append("svg:clipPath")
             .attr("id", "clip")
             .append("svg:rect")
+            .attr("class", "selectedChart")
             .attr("width", width )
             .attr("height", height )
             .attr("x", 0)
