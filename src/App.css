@@ -48,12 +48,12 @@
 
 .selectedChart
 {
-  height: calc(50vh - 4em);
+  height: calc(55vh - 4em);
 }
 
 .unselectedChart
 {
-  height: calc(25vh - 3em);
+  height: calc(15vh - 4em);
 }
 .Root {
   display:flex;

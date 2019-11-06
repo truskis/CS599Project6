@@ -60,15 +60,24 @@ class TimeLineChart extends Component {
 
          var yMax = d3.max(data.map(d => keys.map(k => d[k]).reduce((acc, v) => Math.max(acc, v || 0))));
 
-         // Add Y axis
-         var y = d3.scaleLinear()
-            .domain([0, yMax *1.05])
-            .range([ height, 0]);
-            svg.append("g")
-            .attr("class", "axis")
-            .call(d3.axisLeft(y).tickFormat(d3.format(this.props.format)))
-            .selectAll("text")
-            .style("fill", "#045a5a");
+      // Add Y axis
+      var y = d3.scaleLinear()
+        .domain([0, yMax *1.05])
+        .range([ height, 0])
+      var yTicks = this.props.focus ? y.ticks() : [];
+      if (this.props.integer)
+      {
+        yTicks = yTicks.filter(tick => Number.isInteger(tick));
+      }
+      svg.append("g")
+        .attr("class", "axis")
+        .call(
+          d3.axisLeft(y)
+            .tickValues(yTicks)
+            .tickFormat(d3.format(this.props.format))
+        )
+        .selectAll("text")
+        .style("fill", "#045a5a");
 
             // Add a clipPath: everything out of this area won't be drawn.
             var clip = svg.append("defs").append("svg:clipPath")

@@ -178,7 +178,9 @@ onStrategyChanged(newStrategy)
             && prev.price > prev2.price
             && d.MA10 < d.MA5;
         d.cash = i > 0 ? prev.cash : this.state.accountStart;
-        let shares = i > 0 ? Object.assign({}, prev.shares) : { total: 0 };
+        let shares = i > 0
+          ? Object.assign({}, prev.shares)
+          : { count: 0, total: 0 };
         if (d.MA5BuyFlag && d.cash > d.price) {
           const buy = Math.floor(d.cash / d.price);
           d.cash -= buy * d.price;
@@ -193,10 +195,11 @@ onStrategyChanged(newStrategy)
           shares.total -= shares[this.state.stockSimulate];
           shares[this.state.stockSimulate] = 0;
         }
+        const positions = Object.entries(shares)
+          .filter(([k, v]) => k != 'count' && k != 'total');
+        shares.count = positions.reduce((acc, [k, v]) => acc + (v ? 1 : 0), 0);
         d.shares = shares;
-        d.positions = d3.sum(Object.entries(d.shares)
-          .filter(([k, v]) => k != 'total')
-          .map(([k, v]) => v * this.state.data.get(d.date).get(k)[0].price));
+        d.positions = d3.sum(positions.map(([k, v]) => v * this.state.data.get(d.date).get(k)[0].price));
         d.account = d.cash + d.positions;
         d.accountSPY =
           this.state.data.get(d.date).get('SPY')[0].price
@@ -235,7 +238,9 @@ onStrategyChanged(newStrategy)
             && d.MA10 < d.MA5
             && d.volume > prev.volume;
         d.cash = i > 0 ? prev.cash : this.state.accountStart;
-        let shares = i > 0 ? Object.assign({}, prev.shares) : { total: 0 };
+        let shares = i > 0
+          ? Object.assign({}, prev.shares)
+          : { count: 0, total: 0 };
         if (d.MA5BuyFlag && d.cash > d.price) {
           const buy = Math.floor(d.cash / d.price);
           d.cash -= buy * d.price;
@@ -250,10 +255,11 @@ onStrategyChanged(newStrategy)
           shares.total -= shares[this.state.stockSimulate];
           shares[this.state.stockSimulate] = 0;
         }
+        const positions = Object.entries(shares)
+          .filter(([k, v]) => k != 'count' && k != 'total');
+        shares.count = positions.reduce((acc, [k, v]) => acc + (v ? 1 : 0), 0);
         d.shares = shares;
-        d.positions = d3.sum(Object.entries(d.shares)
-          .filter(([k, v]) => k != 'total')
-          .map(([k, v]) => v * this.state.data.get(d.date).get(k)[0].price));
+        d.positions = d3.sum(positions.map(([k, v]) => v * this.state.data.get(d.date).get(k)[0].price));
         d.account = d.cash + d.positions;
         d.accountSPY =
           this.state.data.get(d.date).get('SPY')[0].price
@@ -279,7 +285,7 @@ onStrategyChanged(newStrategy)
       account: this.state.accountStart,
       positions: 0,
       data: new Map(),
-      shares: { total: 0 }
+      shares: { count: 0, total: 0 }
     };
     this.state.dataByDate
       .forEach((stocks, date) => {
@@ -292,7 +298,7 @@ onStrategyChanged(newStrategy)
         Object.entries(shares)
           .forEach(
             ([k, v]) => {
-              if (k == 'total') return;
+              if (k == 'count' || k == 'total') return;
               const stock = data.get(k)[0];
               if (v > 0 && stock.price > stock.MA5) {
                 curr.cash += v * stock.price;
@@ -322,9 +328,10 @@ onStrategyChanged(newStrategy)
                 : buy;
           }
         );
-        curr.positions = d3.sum(Object.entries(shares)
-          .filter(([k, v]) => k != 'total')
-          .map(([k, v]) => v * data.get(k)[0].price));
+        const positions = Object.entries(shares)
+          .filter(([k, v]) => k != 'count' && k != 'total');
+        shares.count = positions.reduce((acc, [k, v]) => acc + (v ? 1 : 0), 0);
+        curr.positions = d3.sum(positions.map(([k, v]) => v * data.get(k)[0].price));
         curr.account = curr.cash + curr.positions;
         curr.accountSPY =
           data.get('SPY')[0].price
@@ -332,7 +339,9 @@ onStrategyChanged(newStrategy)
             : 0;
         out[date] = curr;
       })
-    const stocks = Object.keys(curr.shares).sort();
+    const stocks = Object.keys(curr.shares)
+      .filter(k => k != 'count' && k != 'total')
+      .sort();
     this.setState({
       stockSelection: stocks,
       stockSelected: stocks[0]
@@ -350,7 +359,7 @@ onStrategyChanged(newStrategy)
       account: this.state.accountStart,
       positions: 0,
       data: new Map(),
-      shares: { total: 0 }
+      shares: { count: 0, total: 0 }
     };
     this.state.dataByDate
       .forEach((stocks, date) => {
@@ -363,7 +372,7 @@ onStrategyChanged(newStrategy)
         Object.entries(shares)
           .forEach(
             ([k, v]) => {
-              if (k == 'total') return;
+              if (k == 'count' || k == 'total') return;
               const stock = data.get(k)[0];
               if (v > 0 && stock.price > stock.MA5) {
                 curr.cash += v * stock.price;
@@ -393,9 +402,10 @@ onStrategyChanged(newStrategy)
                 : buy;
           }
         );
-        curr.positions = d3.sum(Object.entries(shares)
-          .filter(([k, v]) => k != 'total')
-          .map(([k, v]) => v * data.get(k)[0].price));
+        const positions = Object.entries(shares)
+          .filter(([k, v]) => k != 'count' && k != 'total');
+        shares.count = positions.reduce((acc, [k, v]) => acc + (v ? 1 : 0), 0);
+        curr.positions = d3.sum(positions.map(([k, v]) => v * data.get(k)[0].price));
         curr.account = curr.cash + curr.positions;
         curr.accountSPY =
           data.get('SPY')[0].price
@@ -403,7 +413,9 @@ onStrategyChanged(newStrategy)
             : 0;
         out[date] = curr;
       })
-    const stocks = Object.keys(curr.shares).sort();
+    const stocks = Object.keys(curr.shares)
+      .filter(k => k != 'count' && k != 'total')
+      .sort();
     this.setState({
       stockSelection: stocks,
       stockSelected: stocks[0]
@@ -594,23 +606,41 @@ onStrategyChanged(newStrategy)
           verticalAlign: 'top'
         }}>
           <Container fluid>
-            <Row className='header' onClick={() => {
-                  this.setState({
-                    focusChart: 1
-                  });}}> 
-                  Account Value </Row>
+            <Row
+              className='header'
+              onClick={() => this.setState({ focusChart: 1 })}
+            >
+              Account Value
+            </Row>
             <Row className={ this.state.focusChart == 1 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
+                focus={this.state.focusChart == 1}
                 data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
                 keys={['account', 'positions', 'accountSPY']}
                 names={['Account value', 'Positions', 'S&P500 value']}
                 format='$.0f'
               />
             </Row>
-            <Row className='header' onClick={() => {
-                  this.setState({
-                    focusChart: 2
-                  });}}> 
+            <Row
+              className='header'
+              onClick={() => this.setState({ focusChart: 2 })}
+            >
+              Open Positions
+            </Row>
+            <Row className={ this.state.focusChart == 2 ?  'selectedChart' :'unselectedChart'}>
+              <TimeLineChart
+                focus={this.state.focusChart == 2}
+                data={this.state.dataAccount && this.toArray(this.state.dataAccount).map(d => Object.assign({ time: d.time }, d.shares))}
+                keys={['count']}
+                names={['Positions']}
+                format='.0f'
+                integer
+              />
+            </Row>
+            <Row
+              className='header'
+              onClick={() => this.setState({ focusChart: 3 })}
+            >
               <div style={{ alignItems: 'center' }}>
                 <div style={{ display: 'inline-flex' }}>
                   <Select
@@ -622,21 +652,24 @@ onStrategyChanged(newStrategy)
                 </div>&nbsp;Shares Held
               </div>
             </Row>
-            <Row className={ this.state.focusChart == 2 ?  'selectedChart' :'unselectedChart'}>
+            <Row className={ this.state.focusChart == 3 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
+                focus={this.state.focusChart == 3}
                 data={this.state.dataAccount && this.toArray(this.state.dataAccount).map(d => Object.assign({ time: d.time }, d.shares))}
                 keys={[this.state.stockSelected]}
                 names={['Shares']}
                 format='.0f'
+                integer
               />
             </Row>
-            <Row className='header' onClick={() => {
-                  this.setState({
-                    focusChart: 3
-                  });}}> 
+            <Row
+              className='header'
+              onClick={() => this.setState({ focusChart: 4 })}
+            >
               <div style={{ alignItems: 'center' }}>
                 <div style={{ display: 'inline-flex' }}>
                   <Select
+                    focus={this.state.focusChart == 4}
                     styles={selectStyle}
                     options={this.state.stockSelection.map(stock => ({ value: stock, label: stock }))}
                     value={{ value: this.state.stockSelected, label: this.state.stockSelected }}
@@ -645,7 +678,7 @@ onStrategyChanged(newStrategy)
                 </div>&nbsp;Stock Price
               </div>
             </Row>
-            <Row className={ this.state.focusChart == 3 ?  'selectedChart' :'unselectedChart'}>
+            <Row className={ this.state.focusChart == 4 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
                 data={
                   this.state.dataByStock
