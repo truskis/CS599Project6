@@ -136,7 +136,8 @@ this.props.onDatePickedChanged(this.state.startDate,date);
               {this.props.onStockChanged(e.value)}}
           />
           : null}
-          <button id="startButton"  className='button' onClick={this.props.onStartSimulation}>Start Simulation</button>
+          <button id="startButton"  className='button'  style={this.props.runningStrategy ? {display:'none'} : {display:'inline-block'}} onClick={this.props.onStartSimulation}>Start Simulation</button>
+          <img id="loadingMoney" style={this.props.runningStrategy ? {display:'inline-block'} : {display:'none'}} width='60px' src='loading.gif'/>
         </div>
       </div>
     );

@@ -50,7 +50,7 @@ class BarChartHistagram extends Component {
         .attr("class", "axis")
         .call(d3.axisBottom(x).tickFormat(d3.format(".00%")))
         .selectAll("text")
-        .style("font-size", 12)
+        .style("font-size", 11)
         .style("fill", "#045a5a");
 
         // set the parameters for the histogram
@@ -76,7 +76,7 @@ class BarChartHistagram extends Component {
             return e;
         }))
         .selectAll("text")
-        .style("font-size", 12)
+        .style("font-size", 10)
         .style("fill", "#045a5a");;
 
         // // append the bar rectangles to the svg element

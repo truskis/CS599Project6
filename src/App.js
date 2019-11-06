@@ -38,6 +38,7 @@ class App extends Component {
       maxDrawdown: 0,
       sharpeRatio: 0,
       focusChart: 1,
+      runningStrategy:false,
     };
     this.state.accountEnd = this.state.accountStart;
   }
@@ -412,6 +413,13 @@ onStrategyChanged(newStrategy)
 
   async runSimulation()
   {
+    var element = document.getElementById('loadingMoney');
+    element.style.display = "block"; 
+
+    this.setState(
+      {
+        runningStrategy: true
+    });
     const strategies = {
       'strategy1': this.strategy1.bind(this),
       'strategy2': this.strategy2.bind(this),
@@ -481,8 +489,11 @@ onStrategyChanged(newStrategy)
       percentageGainSPY: (last.accountSPY - first.accountSPY) / first.accountSPY * 100,
       standardDeviation: dailyStdDev * 100,
       maxDrawdown: maxDrawDown,
-      sharpeRatio: sharpeRatio
+      sharpeRatio: sharpeRatio,
+      runningStrategy: false
     });
+
+    element.style.display = "none"; 
   }
 
   render()
@@ -538,11 +549,15 @@ onStrategyChanged(newStrategy)
               <DatePickerStock
                 stockNames={this.state.stockNames}
                 dataStock={this.state.dataStock}
+                runningStrategy={this.state.runningStrategy}
                 onDatePickedChanged={this.onDateChanged}
                 onStartSimulation={this.runSimulation}
                 onStrategyChanged={this.onStrategyChanged}
                 onStockChanged={(stock) => this.setState({ stockSimulate: stock })}
               />
+            </Row>
+            <Row  justify='center'>
+              <img id="loadingMoney" style={{display:'none'}} width='60px' src='loading.gif'/>
             </Row>
             <Row justify='center' className='header'>
               Daily Gain/Loss Histogram
