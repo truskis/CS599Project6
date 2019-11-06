@@ -39,6 +39,8 @@ class App extends Component {
       sharpeRatio: 0,
       focusChart: 1,
       runningStrategy:false,
+      taxesWithdrawn:0,
+      taxBracket:0,
     };
     this.state.accountEnd = this.state.accountStart;
     this.chartAccount = React.createRef();
@@ -52,6 +54,29 @@ class App extends Component {
 //    console.log("simulation satrted");
 //   this.runSimulation();
 //  }
+
+getTaxBracket(gain)
+{
+  if (gain < 9700)
+    return 0.1;
+  
+    if (gain <39457)
+    return 0.12;
+
+    if (gain<84200)
+    return 0.22;
+
+    if (gain<160725)
+    return 0.24;
+
+    if (gain<24100)
+    return 0.32;
+
+    if (gain<510301)
+    return 0.35;
+
+    return 0.37;
+}
 onStrategyChanged(newStrategy)
 {
   console.log('strat choseen' + newStrategy);
@@ -497,6 +522,11 @@ onStrategyChanged(newStrategy)
     this.chartPositions.current.resetAxis();
     this.chartShares.current.resetAxis();
     this.chartStock.current.resetAxis();
+
+    var taxes = accountEnd - this.state.accountStart;
+    var taxBracket = this.getTaxBracket(taxes);
+
+    taxes = taxBracket * taxes;
     this.setState({
       dataAccount: dataAccount,
       accountEnd: accountEnd,
@@ -507,7 +537,9 @@ onStrategyChanged(newStrategy)
       standardDeviation: yearlyStdDev * 100,
       maxDrawdown: maxDrawDown,
       sharpeRatio: sharpeRatio,
-      runningStrategy: false
+      runningStrategy: false,
+      taxesWithdrawn: taxes,
+      taxBracket: taxBracket * 100,
     });
   }
 
@@ -602,6 +634,11 @@ onStrategyChanged(newStrategy)
               <SingleNumber header='Max Drawdown %' value={`${this.state.maxDrawdown.toFixed(1)}%`}/>
               <div style={{ margin: 'auto' }} />
               <SingleNumber header='Sharpe Ratio' value={`${this.state.sharpeRatio.toFixed(1)}`}/>
+            </Row>
+            <Row justify='center'>
+              <SingleNumber header='Taxes withdrawn' value={`${this.state.taxesWithdrawn.toFixed(1)}`}/>
+              <div style={{ margin: 'auto' }} />
+              <SingleNumber header='Tax bracket' value={`${this.state.taxBracket.toFixed(1)}%`}/>
             </Row>
           </Container>
         </div>
