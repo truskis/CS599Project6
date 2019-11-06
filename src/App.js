@@ -484,7 +484,7 @@ onStrategyChanged(newStrategy)
       percentageGain: (accountEnd - this.state.accountStart) / this.state.accountStart * 100,
       percentageGainYearly: yearlyGain * 100,
       percentageGainSPY: (last.accountSPY - first.accountSPY) / first.accountSPY * 100,
-      standardDeviation: dailyStdDev * 100,
+      standardDeviation: yearlyStdDev * 100,
       maxDrawdown: maxDrawDown,
       sharpeRatio: sharpeRatio,
       runningStrategy: false
