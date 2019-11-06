@@ -14,6 +14,7 @@
   align-items: center;
   justify-content: center;
   color: white;
+  border: none;
 }
 
 .numberValue {
@@ -45,6 +46,15 @@
   color: #09d3ac;
 }
 
+.selectedChart
+{
+  height: calc(50vh - 4em);
+}
+
+.unselectedChart
+{
+  height: calc(25vh - 3em);
+}
 .Root {
   display:flex;
    flex-direction:row;

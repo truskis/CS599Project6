@@ -36,11 +36,11 @@ class App extends Component {
       percentageGainSPY: 0,
       standardDeviation: 0,
       maxDrawdown: 0,
-      sharpeRatio: 0
+      sharpeRatio: 0,
+      focusChart: 1,
     };
     this.state.accountEnd = this.state.accountStart;
   }
-
 
 //  onStartSimulation()
 //  {
@@ -587,8 +587,12 @@ onStrategyChanged(newStrategy)
           verticalAlign: 'top'
         }}>
           <Container fluid>
-            <Row className='header'>Account Value</Row>
-            <Row style={{ height: 'calc(25vh - 3em)' }}>
+            <Row className='header' onClick={() => {
+                  this.setState({
+                    focusChart: 1
+                  });}}> 
+                  Account Value </Row>
+            <Row className={ this.state.focusChart == 1 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
                 data={this.state.dataAccount && this.toArray(this.state.dataAccount)}
                 keys={['account', 'positions', 'accountSPY']}
@@ -596,7 +600,10 @@ onStrategyChanged(newStrategy)
                 format='$.0f'
               />
             </Row>
-            <Row className='header'>
+            <Row className='header' onClick={() => {
+                  this.setState({
+                    focusChart: 2
+                  });}}> 
               <div style={{ alignItems: 'center' }}>
                 <div style={{ display: 'inline-flex' }}>
                   <Select
@@ -608,7 +615,7 @@ onStrategyChanged(newStrategy)
                 </div>&nbsp;Shares Held
               </div>
             </Row>
-            <Row style={{ height: 'calc(25vh - 3em)' }}>
+            <Row className={ this.state.focusChart == 2 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
                 data={this.state.dataAccount && this.toArray(this.state.dataAccount).map(d => Object.assign({ time: d.time }, d.shares))}
                 keys={[this.state.stockSelected]}
@@ -616,7 +623,10 @@ onStrategyChanged(newStrategy)
                 format='.0f'
               />
             </Row>
-            <Row className='header'>
+            <Row className='header' onClick={() => {
+                  this.setState({
+                    focusChart: 3
+                  });}}> 
               <div style={{ alignItems: 'center' }}>
                 <div style={{ display: 'inline-flex' }}>
                   <Select
@@ -628,7 +638,7 @@ onStrategyChanged(newStrategy)
                 </div>&nbsp;Stock Price
               </div>
             </Row>
-            <Row style={{ height: 'calc(50vh - 4em)' }}>
+            <Row className={ this.state.focusChart == 3 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
                 data={
                   this.state.dataByStock
