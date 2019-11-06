@@ -628,7 +628,7 @@ onStrategyChanged(newStrategy)
                 </div>&nbsp;Stock Price
               </div>
             </Row>
-            <Row style={{ height: 'calc(50vh - 3em)' }}>
+            <Row style={{ height: 'calc(50vh - 4em)' }}>
               <TimeLineChart
                 data={
                   this.state.dataByStock
