@@ -413,9 +413,6 @@ onStrategyChanged(newStrategy)
 
   async runSimulation()
   {
-    var element = document.getElementById('loadingMoney');
-    element.style.display = "block"; 
-
     this.setState(
       {
         runningStrategy: true
@@ -492,8 +489,6 @@ onStrategyChanged(newStrategy)
       sharpeRatio: sharpeRatio,
       runningStrategy: false
     });
-
-    element.style.display = "none"; 
   }
 
   render()
@@ -555,9 +550,6 @@ onStrategyChanged(newStrategy)
                 onStrategyChanged={this.onStrategyChanged}
                 onStockChanged={(stock) => this.setState({ stockSimulate: stock })}
               />
-            </Row>
-            <Row  justify='center'>
-              <img id="loadingMoney" style={{display:'none'}} width='60px' src='loading.gif'/>
             </Row>
             <Row justify='center' className='header'>
               Daily Gain/Loss Histogram
