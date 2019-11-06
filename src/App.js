@@ -680,6 +680,7 @@ onStrategyChanged(newStrategy)
             </Row>
             <Row className={ this.state.focusChart == 4 ?  'selectedChart' :'unselectedChart'}>
               <TimeLineChart
+                focus={this.state.focusChart == 4}
                 data={
                   this.state.dataByStock
                     && this.state.stockSelected
